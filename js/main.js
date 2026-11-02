@@ -25,7 +25,7 @@ function lancer() {
   const L = sentier.longueur;
 
   // Les étapes sont posées juste après les virages du tracé.
-  const positions = [22, 112, 232, 310, 386, 456, 530, 592, L - 44];
+  const positions = [22, 112, 232, 322, 412, 502, 592, L - 44];
   const TRAVERSEE = 3.6, ACCELERATION = 30; // secondes à pleine allure entre deux panneaux, m/s²
   const SEUIL_GESTE = 80, FIN_GESTE = 200; // pixels de défilement pour changer d'étape, ms de pause
   const ENTRE_CRANS = 600; // ms minimum entre deux crans dans le même sens
