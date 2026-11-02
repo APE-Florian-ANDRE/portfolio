@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>André Florian, portfolio en course</title>
+<meta name="description" content="Le portfolio d'André Florian se parcourt en courant : fais défiler pour suivre le coureur sur le sentier et découvrir les projets.">
+<meta name="theme-color" content="#5e4a38">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Overpass:wght@700;900&display=swap">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+<script type="module" src="js/main.js"></script>
+</head>
+<body>
+<a class="evitement" href="?plat">Voir le portfolio sans animation</a>
+
+<div id="monde">
+  <main id="sentier">
+    <!-- Tout le contenu du site est ici. Chaque section devient un panneau du sentier, dans cet ordre.
+         Sur écran vertical, le panneau enjambe le chemin ; sinon il se dresse sur le bas-côté. -->
+
+    <section class="panneau panneau-depart" aria-labelledby="t-depart">
+      <p class="balise" aria-hidden="true"><i></i><i></i></p>
+      <h1 id="t-depart">André Florian</h1>
+      <p class="chapo">Développeur web. Je construis des outils utiles, et je cours pour y réfléchir.</p>
+      <p class="consigne">Fais défiler pour rejoindre le panneau suivant.</p>
+    </section>
+
+    <section class="panneau" aria-labelledby="t-profil">
+      <p class="balise" aria-hidden="true"><i></i><i></i></p>
+      <h2 id="t-profil">Qui court ici&nbsp;?</h2>
+      <p>Je conçois des sites rapides à charger et simples à utiliser, sans empiler les dépendances.</p>
+      <p>La course à pied m'a donné ma méthode&nbsp;: un plan, de la régularité, et des mesures plutôt que des impressions.</p>
+    </section>
+
+    <section class="panneau" aria-labelledby="t-pacebook">
+      <p class="balise" aria-hidden="true"><i></i><i></i></p>
+      <h2 id="t-pacebook">Pacebook</h2>
+      <p>Un carnet d'entraînement pour la course, le trail, le VTT et la force&nbsp;: plan, allures, calories, ressenti après séance et import depuis Apple Santé ou Polar Flow.</p>
+      <p>Il marche sans connexion. Un compte retrouve ensuite les données sur tous les appareils.</p>
+      <ul class="etiquettes">
+        <li>JavaScript sans build</li><li>Supabase</li><li>Vercel</li><li>n8n</li><li>Playwright</li>
+      </ul>
+    </section>
+
+    <section class="panneau" aria-labelledby="t-classique">
+      <p class="balise" aria-hidden="true"><i></i><i></i></p>
+      <h2 id="t-classique">Le Classique OM–PSG</h2>
+      <p>Toute l'histoire d'une rivalité sur une page&nbsp;: un tableau d'affichage de stade, le bilan, la forme du moment et le registre de chaque rencontre, de la plus récente à la plus ancienne.</p>
+      <ul class="etiquettes">
+        <li>HTML</li><li>CSS</li><li>Thème clair et sombre</li>
+      </ul>
+    </section>
+
+    <section class="panneau" aria-labelledby="t-savoirs">
+      <p class="balise" aria-hidden="true"><i></i><i></i></p>
+      <h2 id="t-savoirs">Dans le sac</h2>
+      <dl class="sac">
+        <div><dt>Interfaces</dt><dd>HTML, CSS, JavaScript, Three.js</dd></div>
+        <div><dt>Données</dt><dd>Supabase, PostgreSQL, règles RLS</dd></div>
+        <div><dt>Automatisation</dt><dd>n8n, fonctions Vercel, API de modèles d'IA</dd></div>
+        <div><dt>Fiabilité</dt><dd>Tests Playwright, en-têtes de sécurité</dd></div>
+      </dl>
+    </section>
+
+    <section class="panneau panneau-arrivee" aria-labelledby="t-arrivee">
+      <p class="balise" aria-hidden="true"><i></i><i></i></p>
+      <h2 id="t-arrivee">Arrivée</h2>
+      <p class="chapo">Un projet à lancer&nbsp;? Écris-moi, je réponds vite.</p>
+      <!-- À COMPLÉTER : remplace ces deux adresses par les tiennes. -->
+      <p class="sorties">
+        <a href="mailto:andreflorian83@gmail.com">Écrire un e-mail</a>
+        <a href="https://github.com/APE-Florian-ANDRE">Voir mon GitHub</a>
+      </p>
+    </section>
+  </main>
+</div>
+
+<div id="tableau" hidden>
+  <div id="modes" class="modes">
+    <div role="group" aria-label="Temps qu'il fait">
+      <button type="button" data-temps="reel" aria-label="Temps réel" title="Temps réel">Auto</button>
+      <button type="button" data-temps="clair">Soleil</button>
+      <button type="button" data-temps="pluie">Pluie</button>
+      <button type="button" data-temps="neige">Neige</button>
+    </div>
+    <div role="group" aria-label="Moment de la journée">
+      <button type="button" data-moment="auto" aria-label="Heure réelle" title="Heure réelle">Auto</button>
+      <button type="button" data-moment="jour">Jour</button>
+      <button type="button" data-moment="nuit">Nuit</button>
+    </div>
+  </div>
+  <p class="borne"><span id="km">0,0 km</span> <span id="alti">0 m</span></p>
+  <nav id="profil" aria-label="Aller à une étape du parcours">
+    <svg viewBox="0 0 1000 60" preserveAspectRatio="none" aria-hidden="true">
+      <path id="profil-fond"></path><path id="profil-fait"></path>
+    </svg>
+    <span id="profil-point"></span>
+  </nav>
+  <div class="reglages">
+    <button id="meteo" type="button" hidden title="Utiliser ma position exacte pour la météo"></button>
+    <p class="credit"><a href="https://open-meteo.com/">Météo : Open-Meteo</a></p>
+    <button id="son" type="button" aria-pressed="false">Son coupé</button>
+  </div>
+</div>
+<noscript><p class="evitement-fixe">JavaScript est coupé : le portfolio s'affiche sans le sentier.</p></noscript>
+</body>
+</html>
