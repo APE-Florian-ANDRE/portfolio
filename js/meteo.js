@@ -83,7 +83,7 @@ async function lireMeteo(latitude, longitude) {
     latitude: latitude.toFixed(2), longitude: longitude.toFixed(2),
     current: 'weather_code,temperature_2m,cloud_cover,wind_speed_10m',
   });
-  const reponse = await fetch(url, { signal: AbortSignal.timeout(6000) });
+  const reponse = await fetch(url, { signal: AbortSignal.timeout(15000) });
   if (!reponse.ok) throw new Error(`Open-Meteo a répondu ${reponse.status}`);
   const { current } = await reponse.json();
   if (!Number.isFinite(current?.weather_code)) throw new Error('Réponse météo incomplète');
@@ -164,7 +164,7 @@ export function creerMeteo(scene, qualite, bouton, reglages, force, heure) {
   const boutonsTemps = [...reglages.querySelectorAll('[data-temps]')];
   const boutonsMoment = [...reglages.querySelectorAll('[data-moment]')];
   let voulu = { ...TEMPS_NEUTRE };
-  let lieuExact = null, prochainEclair = 4, temps = 0, attente = 0;
+  let lieuExact = null, prochainEclair = 4, temps = 0, attente = 0, essais = 3;
   let mode = force in PROFILS ? force : 'reel', moment = 'auto', releve = null, soleilVoulu = null;
   const precipitations = creerPrecipitations(scene, qualite);
 
@@ -213,8 +213,9 @@ export function creerMeteo(scene, qualite, bouton, reglages, force, heure) {
       const m = await lireMeteo(latitude, longitude);
       releve = { type: typeDeTemps(m.weather_code), m, nom: lieuExact ? ville : `à ${ville}` };
     } catch {
-      // Sans météo, le sentier garde simplement son grand ciel.
-      if (!lieuExact) releve = null;
+      // Le démarrage de la 3D peut bloquer la page assez longtemps pour faire échouer la lecture :
+      // on réessaie. Sans météo, le sentier garde simplement son grand ciel.
+      if (!releve && essais-- > 0) setTimeout(actualiser, 20000);
     }
     if (mode === 'reel') appliquerReleve();
   }
