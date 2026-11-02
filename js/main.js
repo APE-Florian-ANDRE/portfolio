@@ -25,7 +25,7 @@ function lancer() {
   const L = sentier.longueur;
 
   // Les étapes sont posées juste après les virages du tracé.
-  const positions = [22, 122, 262, 396, 545, L - 44];
+  const positions = [22, 112, 232, 310, 386, 456, 530, 592, L - 44];
   const TRAVERSEE = 3.6, ACCELERATION = 30; // secondes à pleine allure entre deux panneaux, m/s²
   const SEUIL_GESTE = 80, FIN_GESTE = 200; // pixels de défilement pour changer d'étape, ms de pause
   const ENTRE_CRANS = 600; // ms minimum entre deux crans dans le même sens
@@ -160,7 +160,11 @@ function lancer() {
         e.ox = 0;
         // La caméra reste à l'horizontale : dans une montée, on décale l'image pour garder le haut du panneau.
         const hautPanneau = (centre.y + lh / 2 - e.cam.y) / metresParPixel;
-        e.oy = -Math.max(0, hautPanneau - (hauteur / 2 - 16));
+        // Dans une descente, c'est le coureur qui glisserait sous le tableau de bord : on remonte l'image.
+        const piedsCoureur = (e.cam.y - sentier.point(e.d).y) / (metresParPixel * CAM_RECUL / RECUL_PANNEAU);
+        // La marge couvre aussi la perspective : un panneau un peu plus proche paraît plus grand que prévu.
+        const marge = hauteur / 2 - 46 - hautPanneau;
+        e.oy = marge < 0 ? marge : Math.max(0, Math.min(piedsCoureur - (hauteur / 2 - 150), marge));
       }
       e.centre = centre;
 
