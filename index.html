@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>André Florian, portfolio en course</title>
-<meta name="description" content="Le portfolio d'André Florian se parcourt en courant : fais défiler pour suivre le coureur sur le sentier et découvrir les projets.">
+<title>Florian André, portfolio en course</title>
+<meta name="description" content="Le portfolio de Florian André se parcourt en courant : fais défiler pour suivre le coureur sur le sentier et découvrir les projets.">
 <meta name="theme-color" content="#5e4a38">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,16 +23,57 @@
 
     <section class="panneau panneau-depart" aria-labelledby="t-depart">
       <p class="balise" aria-hidden="true"><i></i><i></i></p>
-      <h1 id="t-depart">André Florian</h1>
-      <p class="chapo">Développeur web. Je construis des outils utiles, et je cours pour y réfléchir.</p>
+      <h1 id="t-depart">Florian André</h1>
+      <p class="chapo">Systèmes d'information, automatisation et développement. Je construis des outils utiles, et je cours pour y réfléchir.</p>
       <p class="consigne">Fais défiler pour rejoindre le panneau suivant.</p>
     </section>
 
     <section class="panneau" aria-labelledby="t-profil">
+      <div class="entete">
+        <div>
+          <p class="balise" aria-hidden="true"><i></i><i></i></p>
+          <h2 id="t-profil">Qui court ici&nbsp;?</h2>
+          <p class="periode">Marseille · systèmes d'information</p>
+        </div>
+        <!-- À COMPLÉTER : dépose ta photo dans assets/photo.jpg et remplace ce span par
+             <img class="portrait" src="assets/photo.jpg" alt="Florian André" width="88" height="88"> -->
+        <span class="portrait" aria-hidden="true">FA</span>
+      </div>
+      <p>Diplômé d'un Master en management des systèmes d'information à Epitech Marseille, je tiens les deux bouts&nbsp;: la technique (développement, automatisation, données) et l'organisation (projets IT, transformation digitale).</p>
+      <p>Ce que je cherche&nbsp;: des projets ambitieux où l'on automatise ce qui peut l'être, pour gagner du temps et de la fiabilité.</p>
+    </section>
+
+    <section class="panneau" aria-labelledby="t-formation">
       <p class="balise" aria-hidden="true"><i></i><i></i></p>
-      <h2 id="t-profil">Qui court ici&nbsp;?</h2>
-      <p>Je conçois des sites rapides à charger et simples à utiliser, sans empiler les dépendances.</p>
-      <p>La course à pied m'a donné ma méthode&nbsp;: un plan, de la régularité, et des mesures plutôt que des impressions.</p>
+      <h2 id="t-formation">Formation</h2>
+      <dl class="sac">
+        <div><dt>2022 – 2024</dt><dd><strong>Epitech Marseille</strong><br>Master Expert en management des systèmes d'information, MSc Informatique</dd></div>
+        <div><dt>2021 – 2022</dt><dd><strong>Epitech</strong><br>Pré-MSc Informatique</dd></div>
+        <div><dt>2019 – 2021</dt><dd><strong>M2S formation</strong><br>Baccalauréat, sciences physiques</dd></div>
+        <div><dt>2025</dt><dd><strong>LVMH</strong><br>Création &amp; branding, retail et expérience client</dd></div>
+      </dl>
+    </section>
+
+    <section class="panneau" aria-labelledby="t-edf">
+      <p class="balise" aria-hidden="true"><i></i><i></i></p>
+      <h2 id="t-edf">EDF</h2>
+      <p class="periode">Développeur, en alternance · 2020 – 2024</p>
+      <p>D'abord développeur PowerShell, puis développeur pendant mon Master&nbsp;: j'ai écrit et fait vivre les scripts qui automatisent des processus internes, extraction et traitement de données compris.</p>
+      <p><strong>Ce que j'y ai apporté&nbsp;:</strong> des tâches répétitives confiées à des scripts améliorés en continu, et un lien direct avec les équipes en réunion client pour cadrer les besoins et suivre les projets IT.</p>
+      <ul class="etiquettes">
+        <li>PowerShell</li><li>Automatisation</li><li>Données</li><li>Gestion de projet IT</li><li>Scrum</li>
+      </ul>
+    </section>
+
+    <section class="panneau" aria-labelledby="t-epitech">
+      <p class="balise" aria-hidden="true"><i></i><i></i></p>
+      <h2 id="t-epitech">Epitech</h2>
+      <p class="periode">Accompagnateur pédagogique régional · depuis 2024</p>
+      <p>J'accompagne les étudiants dans leurs projets technologiques, du cadrage à la livraison.</p>
+      <p><strong>Ce que j'y apporte&nbsp;:</strong> le regard d'un développeur passé par l'entreprise, pour débloquer un problème technique, remettre de la méthode dans un projet et aider chacun à livrer quelque chose qui tient debout.</p>
+      <ul class="etiquettes">
+        <li>Pédagogie</li><li>Suivi de projets</li><li>Méthodes agiles</li>
+      </ul>
     </section>
 
     <section class="panneau" aria-labelledby="t-pacebook">
@@ -80,10 +121,11 @@
       <p class="balise" aria-hidden="true"><i></i><i></i></p>
       <h2 id="t-savoirs">Dans le sac</h2>
       <dl class="sac">
-        <div><dt>Interfaces</dt><dd>HTML, CSS, JavaScript, Three.js</dd></div>
+        <div><dt>Langages</dt><dd>JavaScript, TypeScript, Python, Java, PowerShell</dd></div>
+        <div><dt>Interfaces</dt><dd>HTML, CSS, React, Three.js</dd></div>
         <div><dt>Données</dt><dd>Supabase, PostgreSQL, règles RLS</dd></div>
         <div><dt>Automatisation</dt><dd>n8n, fonctions Vercel, API de modèles d'IA</dd></div>
-        <div><dt>Fiabilité</dt><dd>Tests Playwright, en-têtes de sécurité</dd></div>
+        <div><dt>Méthode</dt><dd>Scrum, gestion de projet IT, tests Playwright</dd></div>
       </dl>
     </section>
 

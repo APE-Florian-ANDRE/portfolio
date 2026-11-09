@@ -25,7 +25,7 @@ function lancer() {
   const L = sentier.longueur;
 
   // Les étapes sont posées juste après les virages du tracé.
-  const positions = [22, 112, 232, 322, 412, 502, 592, L - 44];
+  const positions = [22, 82, 140, 196, 252, 312, 372, 432, 502, 592, L - 44];
   const TRAVERSEE = 3.6, ACCELERATION = 30; // secondes à pleine allure entre deux panneaux, m/s²
   const SEUIL_GESTE = 80, FIN_GESTE = 200; // pixels de défilement pour changer d'étape, ms de pause
   const ENTRE_CRANS = 600; // ms minimum entre deux crans dans le même sens
@@ -124,7 +124,7 @@ function lancer() {
     scene.add(e.objet, e.fenetre, e.cadre, e.posteG, e.posteD);
   }
 
-  let largeur = 1, hauteur = 1;
+  let largeur = 1, hauteur = 1, surLeCote = true, visee = VISEE;
   const vue = new THREE.Vector3(), axeX = new THREE.Vector3();
 
   function disposer() {
@@ -135,7 +135,11 @@ function lancer() {
     rendu.setSize(largeur, hauteur, false);
     couche.setSize(largeur, hauteur);
 
-    const portrait = largeur / hauteur < 1.45;
+    // Les panneaux restent au bord du chemin dès que la fenêtre a la place ; plus elle est étroite, plus le regard s'y tourne.
+    const format = largeur / hauteur;
+    surLeCote = format >= 1.2 && largeur >= 900;
+    visee = VISEE + 0.2 * (1 - lisse(format, 1.2, 1.45));
+    const portrait = !surLeCote;
     const metresParPixel = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * RECUL_PANNEAU / hauteur;
     const reserveTableau = 84;
 
@@ -169,7 +173,7 @@ function lancer() {
       e.centre = centre;
 
       // Le panneau reste parallèle à l'image, pour qu'il ne paraisse jamais de travers à l'arrêt.
-      const vise = sentier.point(e.d + 8).setY(0).lerp(centre.clone().setY(0), portrait ? 1 : VISEE);
+      const vise = sentier.point(e.d + 8).setY(0).lerp(centre.clone().setY(0), portrait ? 1 : visee);
       const face = centre.clone().add(e.cam.clone().setY(0).sub(vise).setY(0));
       e.objet.position.copy(centre);
       e.objet.scale.setScalar(s);
@@ -332,12 +336,12 @@ function lancer() {
     camBase(distance, pos);
     sentier.point(distance + 8, regard).setY(regard.y + 1.15);
     // Sur grand écran le coureur reste le sujet : la caméra ne fait qu'entrouvrir le regard vers le panneau.
-    cible.copy(regard).lerp(proche.centre, poids * (largeur / hauteur < 1.45 ? 1 : VISEE));
+    cible.copy(regard).lerp(proche.centre, poids * (surLeCote ? visee : 1));
     const pas = lisse(Math.abs(vitesse), 0.2, 4);
     pos.y += 0.016 * pas * Math.sin(distance / 3.1 * Math.PI * 4);
     pos.x += 0.012 * pas * Math.sin(distance / 3.1 * Math.PI * 2);
     // Devant un panneau, le regard revient à l'horizontale : le texte reste droit, même dans une pente.
-    if (largeur / hauteur >= 1.45) cible.y += (pos.y - cible.y) * poids;
+    if (surLeCote) cible.y += (pos.y - cible.y) * poids;
     camera.position.copy(pos);
     camera.lookAt(cible);
     if (sonde) { camera.position.set(foyer.x + sonde.x, foyer.y + sonde.y, foyer.z + sonde.z); camera.lookAt(foyer.x, foyer.y + 1.55, foyer.z); }

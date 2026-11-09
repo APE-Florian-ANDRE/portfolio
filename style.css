@@ -81,6 +81,20 @@ a { color: inherit; }
 .sac dt { font-weight: 700; }
 .sac dd { margin: 0; }
 
+.periode { font-family: var(--titres); font-weight: 700; font-size: .92rem; color: rgb(230 220 198 / .75); }
+.panneau .periode { margin-bottom: .8em; }
+.entete { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.panneau .entete .periode { margin-bottom: 0; }
+.entete + p { margin-top: .8em; }
+/* La photo en médaillon ; en attendant, les initiales sur la couleur du balisage. */
+.portrait {
+  flex: none; display: grid; place-items: center;
+  width: 88px; height: 88px; border-radius: 50%;
+  border: 3px solid var(--grave);
+  background: var(--balise-rouge); object-fit: cover;
+  font: 900 1.8rem var(--titres); color: var(--grave);
+}
+
 .sorties { display: flex; flex-wrap: wrap; gap: 10px; }
 .sorties a {
   padding: 9px 14px 7px;
