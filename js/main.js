@@ -96,12 +96,15 @@ function lancer() {
         if (s <= longueur) return point(s, c);
         return point(longueur, c).addScaledVector(tangente(longueur), s - longueur);
       };
-      const ecart = (x, z) => {
-        let m = Infinity;
-        for (const p of points) m = Math.min(m, (p.x - x) ** 2 + (p.z - z) ** 2);
-        return Math.sqrt(m);
+      const proche = (x, z) => {
+        let m = Infinity, y = 0;
+        for (const p of points) {
+          const e = (p.x - x) ** 2 + (p.z - z) ** 2;
+          if (e < m) { m = e; y = p.y; }
+        }
+        return { distance: Math.sqrt(m), y };
       };
-      return { longueur, point, tangente, prolonge, ecart };
+      return { longueur, point, tangente, prolonge, proche, fin: points[nb] };
     }
     return null;
   }
@@ -117,16 +120,13 @@ function lancer() {
   });
 
   const zones = { plats: [], interdits: [], caches: [], variantes };
-  // La trace est aplanie et dégagée, la clairière aussi.
+  // Rien ne pousse sur la trace ni dans la clairière ; le monde se charge d'aplanir le sol.
   for (const v of variantes) {
     for (let s = 6; s <= v.longueur; s += 2.5) {
       const p = v.point(s), q = v.point(s - 2.5);
-      zones.plats.push({ x: p.x, z: p.z, r: 1.6, y: p.y - 0.25 });
       zones.interdits.push({ ax: q.x, az: q.z, bx: p.x, bz: p.z, r: 2 });
     }
-    const fin = v.point(v.longueur);
-    zones.plats.push({ x: fin.x, z: fin.z, r: 6, y: fin.y - 0.25 });
-    zones.interdits.push({ ax: fin.x, az: fin.z, bx: fin.x, bz: fin.z, r: 7 });
+    zones.interdits.push({ ax: v.fin.x, az: v.fin.z, bx: v.fin.x, bz: v.fin.z, r: 7 });
   }
   etapes.forEach((e, i) => {
     const y = e.sol.y;
@@ -589,7 +589,7 @@ function lancer() {
 
   (document.fonts?.ready ?? Promise.resolve()).then(() => {
     disposer();
-    if (params.has('debug')) window.__sentier = { chrono: () => chronoArrivee, sonde: v => { sonde = v; }, poser: d => { pause = true; distance = d; }, sentier, meteo: meteo.etat, etapes, camera, scene, allerA, camBase, rendu, etape: () => courante, saut: () => { distance = etapes[courante].d; vitesse = 0; }, variantes, prendre, phase: () => enVariante ? phase : 'sentier', sautVariante: () => { if (enVariante) { s = phase === 'retour' ? 0 : enVariante.longueur - 3; vs = 0; } } };
+    if (params.has('debug')) window.__sentier = { chrono: () => chronoArrivee, sonde: v => { sonde = v; }, poser: d => { pause = true; distance = d; }, sentier, meteo: meteo.etat, etapes, camera, scene, allerA, camBase, rendu, hauteur: monde.hauteur, etape: () => courante, saut: () => { distance = etapes[courante].d; vitesse = 0; }, variantes, prendre, phase: () => enVariante ? phase : 'sentier', sautVariante: () => { if (enVariante) { s = phase === 'retour' ? 0 : enVariante.longueur - 3; vs = 0; } } };
     requestAnimationFrame(t => { precedent = t; image(t); });
   });
 }

@@ -600,6 +600,13 @@ export function creerMonde(scene, sentier, zones, qualite) {
       const k = lisse(Math.hypot(x - f.x, z - f.z), f.r, f.r + 7);
       h = mix(f.y, h, k);
     }
+    // Une variante se creuse comme le sentier : le sol suit sa trace, à peine sous les pieds, et s'étale en clairière au bout.
+    for (const v of zones.variantes) {
+      if (Math.hypot(x - v.fin.x, z - v.fin.z) > v.longueur + 14) continue;
+      h = mix(v.fin.y - 0.3, h, lisse(Math.hypot(x - v.fin.x, z - v.fin.z), 5.5, 11));
+      const p = v.proche(x, z);
+      h = mix(p.y - 0.3, h, lisse(p.distance, 1.4, 4));
+    }
     // Le chemin a toujours le dernier mot : rien ne doit le recouvrir, sauf le ravin sous le pont.
     h = mix(n.y - 0.3, h, lisse(n.distance, 1.8, 3.6));
     return mix(h, niveauEau - 0.8, ravine(x, z));
@@ -657,7 +664,7 @@ export function creerMonde(scene, sentier, zones, qualite) {
     const d = r() * sentier.longueur, p = sentier.point(d), t = sentier.tangente(d);
     const cote = (r() < 0.5 ? -1 : 1) * (1.5 + Math.pow(r(), 1.4) * 16);
     const x = p.x - t.z * cote, z = p.z + t.x * cote;
-    if (sentier.plusProche(x, z).distance > 1.4 && zones.variantes.every(v => v.ecart(x, z) > 1.1)) ajouter('herbe', x, z, 0.5 + r() * 0.5);
+    if (sentier.plusProche(x, z).distance > 1.4 && zones.variantes.every(v => v.proche(x, z).distance > 1.1)) ajouter('herbe', x, z, 0.5 + r() * 0.5);
   }
 
   // Des pierres longent l'eau : la rive a un bord naturel, sans les marches du maillage du terrain.

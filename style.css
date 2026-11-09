@@ -188,7 +188,8 @@ a { color: inherit; }
 
 #tableau {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
-  display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 18px;
+  /* Colonnes de largeur fixe : le profil de la course garde sa place, quels que soient la météo et le kilométrage. */
+  display: grid; grid-template-columns: 6.2em 1fr 12em; align-items: end; gap: 18px;
   padding: 0 16px 12px;
   color: #fff;
   text-shadow: 0 1px 3px rgb(0 0 0 / .55);
@@ -212,7 +213,7 @@ a { color: inherit; }
 .modes button[aria-pressed="true"] { background: #fff; color: var(--sous-bois); text-shadow: none; }
 .modes button:focus-visible { outline-color: #fff; position: relative; z-index: 1; }
 .borne {
-  display: grid; margin: 0; min-width: 5.5em;
+  display: grid; margin: 0; font-variant-numeric: tabular-nums;
   font-family: var(--titres); line-height: 1.15;
 }
 #km { font-size: 1.5rem; font-weight: 900; }
@@ -246,7 +247,7 @@ a { color: inherit; }
   cursor: pointer; pointer-events: auto;
 }
 #son:focus-visible, #meteo:focus-visible, .credit a:focus-visible { outline-color: #fff; }
-.reglages { display: grid; justify-items: end; gap: 3px; pointer-events: auto; }
+.reglages { display: grid; justify-items: end; gap: 3px; min-width: 0; pointer-events: auto; }
 #meteo {
   min-height: 24px; padding: 2px 0; border: 0; background: none; color: #fff;
   font: 700 .9rem var(--titres); text-shadow: 0 1px 3px rgb(0 0 0 / .7);
@@ -270,7 +271,7 @@ a { color: inherit; }
   #variante { bottom: 150px; }
   #tableau { gap: 10px; padding: 0 12px 10px; }
   #km { font-size: 1.2rem; }
-  .borne { min-width: 4.4em; }
+  #tableau { grid-template-columns: 4.9em 1fr 8.5em; }
   #son { padding: 0 8px; font-size: .85rem; }
   .modes { justify-self: stretch; flex-wrap: nowrap; justify-content: space-between; }
   .modes button { padding: 0 8px; font-size: .78rem; }
