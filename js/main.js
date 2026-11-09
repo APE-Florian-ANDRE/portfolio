@@ -55,35 +55,58 @@ function lancer() {
   });
 
   // Chaque projet a sa variante, balisée en jaune : une trace qui quitte le sentier jusqu'à une clairière.
-  // Elle part de préférence à l'opposé du panneau, à l'extérieur du virage, là où le sentier ne repasse pas.
+  // Parmi plusieurs tracés possibles, on garde celui qui épouse le mieux le terrain : ni tranchée, ni remblai.
   function creerVariante(e) {
     const depart = sentier.point(e.d), pivot = sentier.point(e.d + 6);
-    for (const cote of [-e.cote, e.cote]) for (const angle of [1, 0.8, 1.2, 0.6]) {
+    let meilleure = null;
+    for (const cote of [-e.cote, e.cote]) for (const angle of [0.6, 0.8, 1, 1.2, 1.4]) for (const virage of [-0.4, 0, 0.4]) {
       const droite = e.droite.clone().multiplyScalar(cote);
       const cap = a => e.avant.clone().multiplyScalar(Math.cos(a)).addScaledVector(droite, Math.sin(a));
       const p1 = pivot.clone().addScaledVector(droite, 1.2);
       const p2 = p1.clone().addScaledVector(cap(angle), 9);
-      const p3 = p2.clone().addScaledVector(cap(angle + 0.35), 9);
-      const p4 = p3.clone().addScaledVector(cap(angle + 0.5), 7);
-      // Elle épouse la pente du terrain, sans dépasser 22 % : pas de tranchée, pas de mur.
-      let y = p1.y;
-      for (const [p, l] of [[p2, 9], [p3, 9], [p4, 7]]) {
-        y = THREE.MathUtils.clamp(relief(sentier, p.x, p.z), y - l * 0.22, y + l * 0.22);
-        p.y = y;
-      }
+      const p3 = p2.clone().addScaledVector(cap(angle + virage), 9);
+      const p4 = p3.clone().addScaledVector(cap(angle + virage * 1.5), 7);
       const courbe = new THREE.CatmullRomCurve3([depart, p1, p2, p3, p4], false, 'centripetal');
-      const longueur = courbe.getLength(), nb = Math.ceil(longueur);
+      const longueur = courbe.getLength(), nb = Math.ceil(longueur), pas = longueur / nb;
       const points = courbe.getSpacedPoints(nb);
       // Elle s'éloigne du sentier principal à mesure qu'elle avance, évite les autres panneaux,
       // et sa clairière reste bien à l'écart.
       const degagee = points.every((p, k) => {
-        const s = k / nb * longueur;
+        const s = k * pas;
         if (s < 8) return true;
         const marge = s > longueur - 6 ? 12 : Math.min(8, (s - 6) * 0.5);
         return sentier.plusProche(p.x, p.z).distance > marge
           && etapes.every(o => Math.hypot(p.x - o.lateral.x, p.z - o.lateral.z) > 6);
       });
       if (!degagee) continue;
+
+      // L'altitude suit le relief lissé mètre par mètre, sans dépasser 22 % de pente ;
+      // au départ, elle reste collée au sentier qu'elle quitte.
+      const brut = points.map(p => relief(sentier, p.x, p.z));
+      points[0].y = depart.y;
+      for (let k = 1; k <= nb; k++) {
+        let somme = 0, compte = 0;
+        for (let j = Math.max(0, k - 4); j <= Math.min(nb, k + 4); j++) { somme += brut[j]; compte++; }
+        const voulu = THREE.MathUtils.lerp(sentier.plusProche(points[k].x, points[k].z).y, somme / compte, lisse(k * pas, 3, 9));
+        points[k].y = THREE.MathUtils.clamp(voulu, points[k - 1].y - 0.22 * pas, points[k - 1].y + 0.22 * pas);
+      }
+      // Ce qu'il faudrait creuser ou remblayer de part et d'autre de la trace, et autour de la clairière.
+      let creux = 0;
+      for (let k = 6; k <= nb; k++) {
+        const p = points[k], t = points[Math.min(nb, k + 1)].clone().sub(points[Math.max(0, k - 1)]).setY(0).normalize();
+        for (const c of [-4, -2.5, 2.5, 4]) creux = Math.max(creux, Math.abs(relief(sentier, p.x - t.z * c, p.z + t.x * c) - p.y));
+      }
+      const fin = points[nb];
+      for (let a = 0; a < 6.28; a += 0.5) for (const r of [6, 9]) {
+        creux = Math.max(creux, Math.abs(relief(sentier, fin.x + Math.cos(a) * r, fin.z + Math.sin(a) * r) - fin.y) * 0.8);
+      }
+      // À relief égal, on préfère partir à l'opposé du panneau, à l'extérieur du virage.
+      creux += cote === e.cote ? 0.3 : 0;
+      if (!meilleure || creux < meilleure.creux) meilleure = { points, longueur, nb, creux };
+    }
+    if (!meilleure) return null;
+    {
+      const { points, longueur, nb, creux } = meilleure;
 
       const point = (s, c = new THREE.Vector3()) => {
         const f = THREE.MathUtils.clamp(s / longueur, 0, 1) * nb, i = Math.min(Math.floor(f), nb - 1);
@@ -104,9 +127,8 @@ function lancer() {
         }
         return { distance: Math.sqrt(m), y };
       };
-      return { longueur, point, tangente, prolonge, proche, fin: points[nb] };
+      return { longueur, point, tangente, prolonge, proche, fin: points[nb], creux };
     }
-    return null;
   }
 
   const variantes = [];
