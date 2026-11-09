@@ -4,6 +4,7 @@
   --grave: #e6dcc6;
   --grave-doux: rgb(230 220 198 / .45);
   --balise-rouge: #a8443c;
+  --balise-jaune: #e0b63e;
   --sous-bois: #2a2c26;
   --brume: #d7d3c6;
   --titres: "Overpass", "Arial Narrow", sans-serif;
@@ -96,13 +97,72 @@ a { color: inherit; }
 }
 
 .sorties { display: flex; flex-wrap: wrap; gap: 10px; }
-.sorties a {
-  padding: 9px 14px 7px;
-  background: var(--planche-sombre);
+.sorties a, .sorties button {
+  padding: 9px 14px 7px; border: 0; border-radius: 0;
+  background: var(--planche-sombre); color: inherit;
   font-family: var(--titres); font-weight: 700; font-size: 1rem;
-  text-decoration: none;
+  text-decoration: none; cursor: pointer;
 }
-.sorties a:hover { background: var(--balise-rouge); }
+.sorties a:hover, .sorties button:hover { background: var(--balise-rouge); }
+/* Les variantes sont balisées en jaune, comme les sentiers de petite randonnée. */
+.sorties .explorer { background: var(--balise-jaune); color: var(--sous-bois); }
+.sorties .explorer:hover { background: #ecc85a; }
+
+.balise-variante { display: block; width: 30px; height: 6px; background: var(--balise-jaune); }
+.fiche .balise-variante { margin: 0 0 12px; }
+
+.fiche {
+  width: min(900px, calc(100vw - 32px)); max-height: calc(100dvh - 32px);
+  padding: 28px 32px 30px; border: 0;
+  background:
+    repeating-linear-gradient(1deg, rgb(255 255 255 / .018) 0 3px, rgb(0 0 0 / .03) 3px 7px),
+    var(--planche);
+  color: var(--grave);
+  box-shadow: 0 30px 80px rgb(0 0 0 / .5);
+  overflow: auto; overscroll-behavior: contain; touch-action: pan-y;
+}
+.fiche::backdrop { background: rgb(20 16 10 / .55); backdrop-filter: blur(3px); }
+.fiche[open] { animation: fiche-arrive .35s ease-out; }
+@keyframes fiche-arrive { from { opacity: 0; transform: translateY(18px); } }
+.fiche h2 {
+  margin: 0 0 .3em;
+  font: 900 clamp(1.8rem, 5vw, 2.4rem)/1 var(--titres); letter-spacing: -.015em;
+}
+.fiche h3 { margin: 0 0 .5em; font: 700 1.05rem var(--titres); color: var(--balise-jaune); }
+.fiche .chapo { margin: 0 0 18px; max-width: 60ch; }
+.fiche ul { margin: 0; padding-left: 1.1em; }
+.fiche li { margin-bottom: .45em; }
+.galerie {
+  display: flex; gap: 14px; margin: 0 -32px 22px; padding: 0 32px 8px;
+  overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 32px;
+}
+.galerie figure { flex: none; margin: 0; scroll-snap-align: start; }
+.galerie img {
+  display: block; height: clamp(200px, 42vh, 340px); width: auto; max-width: none;
+  border: 3px solid var(--planche-sombre); background: var(--sous-bois);
+}
+.galerie figcaption { max-width: 34ch; margin-top: 6px; font-size: .85rem; color: rgb(230 220 198 / .8); }
+.colonnes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 32px; margin-bottom: 22px; }
+.fiche .sorties { margin: 0; }
+
+#variante {
+  position: fixed; left: 50%; bottom: 132px; z-index: 6;
+  display: flex; align-items: center; gap: 10px;
+  min-height: 44px; padding: 6px 8px 6px 14px; transform: translateX(-50%);
+  border: 0; border-radius: 3px;
+  background: rgb(30 30 26 / .72); color: #fff;
+  font: 700 .95rem var(--titres); white-space: nowrap;
+  cursor: pointer; animation: fiche-arrive .3s ease-out;
+}
+#variante[hidden] { display: none; }
+#variante:hover { background: rgb(30 30 26 / .9); }
+#variante:focus-visible { outline-color: #fff; }
+#variante kbd {
+  min-width: 28px; padding: 3px 7px 1px; border-radius: 3px;
+  background: var(--balise-jaune); color: var(--sous-bois);
+  font: 900 .95rem var(--titres); text-align: center;
+}
+.tactile #variante kbd { display: none; }
 
 /* Version sentier */
 .monde, .monde body { height: 100%; overflow: hidden; overscroll-behavior: none; touch-action: none; }
@@ -203,6 +263,11 @@ a { color: inherit; }
   .chapo { font-size: 1.15rem; }
   .panneau .balise { margin-bottom: 12px; }
   .sac div { grid-template-columns: 1fr; }
+  .fiche { padding: 20px 20px 22px; }
+  .galerie { margin: 0 -20px 18px; padding: 0 20px 8px; scroll-padding: 0 20px; }
+  .galerie img { height: clamp(180px, 38vh, 300px); }
+  .colonnes { grid-template-columns: 1fr; }
+  #variante { bottom: 150px; }
   #tableau { gap: 10px; padding: 0 12px 10px; }
   #km { font-size: 1.2rem; }
   .borne { min-width: 4.4em; }

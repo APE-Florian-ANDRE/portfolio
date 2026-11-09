@@ -3,13 +3,20 @@
 // testée en profondeur. Un arbre passé devant masque donc réellement le texte, sans perdre les liens.
 import * as THREE from 'three';
 import { CSS3DRenderer, CSS3DObject } from '../vendor/CSS3DRenderer.js';
-import { creerSentier, creerMonde, creerParticules, lisse } from './world.js';
+import { creerSentier, creerMonde, creerParticules, relief, lisse } from './world.js';
 import { creerCoureur } from './runner.js';
 import { creerMeteo } from './meteo.js';
 
 const params = new URLSearchParams(location.search);
 const sansMouvement = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const essai = document.createElement('canvas').getContext('webgl2');
+
+// Sans le sentier, « Explorer le projet » ouvre directement la fiche ; le sentier en fait une variante à parcourir.
+let explorer = fiche => fiche.showModal();
+document.addEventListener('click', ev => {
+  const bouton = ev.target.closest?.('.explorer');
+  if (bouton) explorer(document.getElementById(bouton.dataset.vers));
+});
 
 if (essai && !sansMouvement && !params.has('plat')) lancer();
 
@@ -47,7 +54,80 @@ function lancer() {
     return { el, d, cam, sol, avant, droite, cote, lateral };
   });
 
-  const zones = { plats: [], interdits: [], caches: [] };
+  // Chaque projet a sa variante, balisée en jaune : une trace qui quitte le sentier jusqu'à une clairière.
+  // Elle part de préférence à l'opposé du panneau, à l'extérieur du virage, là où le sentier ne repasse pas.
+  function creerVariante(e) {
+    const depart = sentier.point(e.d), pivot = sentier.point(e.d + 6);
+    for (const cote of [-e.cote, e.cote]) for (const angle of [1, 0.8, 1.2, 0.6]) {
+      const droite = e.droite.clone().multiplyScalar(cote);
+      const cap = a => e.avant.clone().multiplyScalar(Math.cos(a)).addScaledVector(droite, Math.sin(a));
+      const p1 = pivot.clone().addScaledVector(droite, 1.2);
+      const p2 = p1.clone().addScaledVector(cap(angle), 9);
+      const p3 = p2.clone().addScaledVector(cap(angle + 0.35), 9);
+      const p4 = p3.clone().addScaledVector(cap(angle + 0.5), 7);
+      // Elle épouse la pente du terrain, sans dépasser 22 % : pas de tranchée, pas de mur.
+      let y = p1.y;
+      for (const [p, l] of [[p2, 9], [p3, 9], [p4, 7]]) {
+        y = THREE.MathUtils.clamp(relief(sentier, p.x, p.z), y - l * 0.22, y + l * 0.22);
+        p.y = y;
+      }
+      const courbe = new THREE.CatmullRomCurve3([depart, p1, p2, p3, p4], false, 'centripetal');
+      const longueur = courbe.getLength(), nb = Math.ceil(longueur);
+      const points = courbe.getSpacedPoints(nb);
+      // Elle s'éloigne du sentier principal à mesure qu'elle avance, évite les autres panneaux,
+      // et sa clairière reste bien à l'écart.
+      const degagee = points.every((p, k) => {
+        const s = k / nb * longueur;
+        if (s < 8) return true;
+        const marge = s > longueur - 6 ? 12 : Math.min(8, (s - 6) * 0.5);
+        return sentier.plusProche(p.x, p.z).distance > marge
+          && etapes.every(o => Math.hypot(p.x - o.lateral.x, p.z - o.lateral.z) > 6);
+      });
+      if (!degagee) continue;
+
+      const point = (s, c = new THREE.Vector3()) => {
+        const f = THREE.MathUtils.clamp(s / longueur, 0, 1) * nb, i = Math.min(Math.floor(f), nb - 1);
+        return c.copy(points[i]).lerp(points[i + 1], f - i);
+      };
+      const tangente = (s, c = new THREE.Vector3()) => c.copy(point(s + 1.5)).sub(point(s - 1.5)).setY(0).normalize();
+      // En deçà du départ, la trace se confond avec le sentier ; au-delà de la clairière, elle file tout droit.
+      const prolonge = (s, c = new THREE.Vector3()) => {
+        if (s < 0) return sentier.point(e.d + s, c);
+        if (s <= longueur) return point(s, c);
+        return point(longueur, c).addScaledVector(tangente(longueur), s - longueur);
+      };
+      const ecart = (x, z) => {
+        let m = Infinity;
+        for (const p of points) m = Math.min(m, (p.x - x) ** 2 + (p.z - z) ** 2);
+        return Math.sqrt(m);
+      };
+      return { longueur, point, tangente, prolonge, ecart };
+    }
+    return null;
+  }
+
+  const variantes = [];
+  etapes.forEach((e, i) => {
+    const bouton = e.el.querySelector('.explorer');
+    const v = bouton && creerVariante(e);
+    if (!v) return;
+    Object.assign(v, { etape: i, fiche: document.getElementById(bouton.dataset.vers), nom: e.el.querySelector('h2').textContent });
+    e.variante = v;
+    variantes.push(v);
+  });
+
+  const zones = { plats: [], interdits: [], caches: [], variantes };
+  // La trace est aplanie et dégagée, la clairière aussi.
+  for (const v of variantes) {
+    for (let s = 6; s <= v.longueur; s += 2.5) {
+      const p = v.point(s), q = v.point(s - 2.5);
+      zones.plats.push({ x: p.x, z: p.z, r: 1.6, y: p.y - 0.25 });
+      zones.interdits.push({ ax: q.x, az: q.z, bx: p.x, bz: p.z, r: 2 });
+    }
+    const fin = v.point(v.longueur);
+    zones.plats.push({ x: fin.x, z: fin.z, r: 6, y: fin.y - 0.25 });
+    zones.interdits.push({ ax: fin.x, az: fin.z, bx: fin.x, bz: fin.z, r: 7 });
+  }
   etapes.forEach((e, i) => {
     const y = e.sol.y;
     zones.plats.push({ x: e.lateral.x, z: e.lateral.z, r: 3.5, y });
@@ -122,6 +202,28 @@ function lancer() {
     e.posteD = new THREE.Mesh(posteGeo, bois);
     for (const m of [e.cadre, e.posteG, e.posteD]) m.castShadow = qualite.ombres;
     scene.add(e.objet, e.fenetre, e.cadre, e.posteG, e.posteD);
+  }
+
+  // Un poteau indicateur à l'entrée de chaque variante, un autre dans sa clairière : flèche en bois, bout jaune.
+  const jaune = new THREE.MeshStandardMaterial({ color: '#e0b63e', roughness: 0.7 });
+  const poteauGeo = new THREE.CylinderGeometry(0.06, 0.075, 1.5, 8);
+  const flecheGeo = new THREE.BoxGeometry(0.8, 0.17, 0.04), bandeGeo = new THREE.BoxGeometry(0.16, 0.18, 0.05);
+  function poteau(pied, cap) {
+    const g = new THREE.Group();
+    const p = new THREE.Mesh(poteauGeo, bois), f = new THREE.Mesh(flecheGeo, bois), b = new THREE.Mesh(bandeGeo, jaune);
+    p.position.y = 0.75;
+    f.position.set(0.32, 1.32, 0);
+    b.position.set(0.62, 1.32, 0);
+    for (const m of [p, f, b]) { m.castShadow = qualite.ombres; g.add(m); }
+    g.position.copy(pied);
+    g.rotation.y = Math.atan2(-cap.z, cap.x);
+    scene.add(g);
+  }
+  for (const v of variantes) {
+    const e = etapes[v.etape];
+    poteau(v.point(7).addScaledVector(e.avant, 1.4), v.tangente(10));
+    const t = v.tangente(v.longueur);
+    poteau(v.point(v.longueur).addScaledVector(t, 1.6), new THREE.Vector3(-t.z, 0, t.x));
   }
 
   let largeur = 1, hauteur = 1, surLeCote = true, visee = VISEE;
@@ -203,10 +305,40 @@ function lancer() {
   const n = etapes.length;
   let courante = 0, plafond = 0, pause = false, sonde = null, chronoArrivee = 0;
   const FIN_ARRIVEE = 2.075;
+  // Sur une variante, tout geste de navigation ramène d'abord au sentier.
   const allerA = i => {
+    if (enVariante) return rebrousser();
+    attente = null;
     courante = THREE.MathUtils.clamp(i, 0, n - 1);
     plafond = Math.max(10, Math.abs(etapes[courante].d - distance) / TRAVERSEE);
   };
+
+  // La variante : aller jusqu'à la clairière, y lire la fiche, puis revenir au panneau.
+  let enVariante = null, phase = 'aller', s = 0, vs = 0, attente = null;
+  const ficheOuverte = () => document.querySelector('.fiche[open]');
+  function prendre(v) {
+    if (!v || enVariante) return;
+    if (courante !== v.etape || Math.abs(distance - etapes[v.etape].d) > 0.6) {
+      allerA(v.etape);
+      attente = v;
+      return;
+    }
+    enVariante = v; phase = 'aller'; s = 0; vs = 0; attente = null;
+  }
+  function rebrousser() {
+    if (enVariante && phase !== 'retour') phase = 'retour';
+  }
+  explorer = fiche => {
+    const v = variantes.find(x => x.fiche === fiche);
+    v ? prendre(v) : fiche.showModal();
+  };
+  for (const v of variantes) v.fiche.addEventListener('close', rebrousser);
+
+  const indice = document.getElementById('variante');
+  const indiceTexte = document.getElementById('variante-texte'), indiceTouche = indice.querySelector('kbd');
+  let indiceActuel = '';
+  if (matchMedia('(pointer: coarse)').matches) document.documentElement.classList.add('tactile');
+  indice.addEventListener('click', () => enVariante ? rebrousser() : prendre(etapes[courante].variante));
 
   // Tableau de bord : le profil de la course, avec un repère cliquable par étape.
   document.getElementById('tableau').hidden = false;
@@ -251,6 +383,8 @@ function lancer() {
     // Un geste en sens inverse compte tout de suite, et une pause clôt le geste en cours.
     let cumul = 0, dernier = 0, consomme = 0, dernierCran = -Infinity, sensCran = 0;
     addEventListener('wheel', ev => {
+      // Une fiche ouverte défile normalement.
+      if (ficheOuverte()) return;
       ev.preventDefault();
       const delta = ev.deltaY * (ev.deltaMode === 1 ? 40 : ev.deltaMode === 2 ? innerHeight : 1);
       if (ev.timeStamp - dernier > FIN_GESTE) cumul = consomme = 0;
@@ -272,14 +406,23 @@ function lancer() {
     let departY = null;
     addEventListener('touchstart', ev => { departY = ev.touches[0].clientY; }, { passive: true });
     addEventListener('touchend', ev => {
-      if (departY === null) return;
+      if (departY === null || ficheOuverte()) return;
       const glisse = departY - ev.changedTouches[0].clientY;
       departY = null;
       if (Math.abs(glisse) >= SEUIL_GESTE * 0.6) allerA(courante + Math.sign(glisse));
     }, { passive: true });
 
     addEventListener('keydown', ev => {
-      if (ev.altKey || ev.ctrlKey || ev.metaKey) return;
+      if (ev.altKey || ev.ctrlKey || ev.metaKey || ficheOuverte()) return;
+      if (ev.key === 'e' || ev.key === 'E') {
+        if (!etapes[courante].variante) return;
+        prendre(etapes[courante].variante);
+        return ev.preventDefault();
+      }
+      if (ev.key === 'Escape' && enVariante) {
+        rebrousser();
+        return ev.preventDefault();
+      }
       const surCommande = ev.target.closest?.('a, button');
       const action = {
         ArrowDown: 1, ArrowRight: 1, PageDown: 1, ArrowUp: -1, ArrowLeft: -1, PageUp: -1,
@@ -307,16 +450,37 @@ function lancer() {
 
     // Une vraie course : il accélère, tient son allure, puis freine en arrivant au panneau.
     // S'il doit repartir dans l'autre sens, il freine trois fois plus fort.
-    const ecart = pause ? 0 : etapes[courante].d - distance;
+    const ecart = pause || enVariante ? 0 : etapes[courante].d - distance;
     const voulue = Math.sign(ecart) * Math.min(Math.sqrt(2 * ACCELERATION * Math.abs(ecart)), Math.abs(ecart) * 3, plafond);
     const reprise = (voulue * vitesse < 0 ? ACCELERATION * 3 : ACCELERATION) * dt;
-    if (pause) vitesse = 0;
+    if (pause || enVariante) vitesse = 0;
     vitesse += THREE.MathUtils.clamp(voulue - vitesse, -reprise, reprise);
     distance += vitesse * dt;
     if (Math.abs(vitesse) > 0.5) sens = Math.sign(vitesse);
+    if (attente && Math.abs(etapes[attente.etape].d - distance) < 0.3 && Math.abs(vitesse) < 0.5) prendre(attente);
 
-    sentier.point(distance, foyer);
-    sentier.tangente(distance, tan);
+    // Sur la variante, même course : il accélère, puis freine en entrant dans la clairière.
+    if (enVariante) {
+      const reste = (phase === 'retour' ? 0 : enVariante.longueur - 3) - s;
+      const voulueV = Math.sign(reste) * Math.min(Math.sqrt(2 * ACCELERATION * Math.abs(reste)), Math.abs(reste) * 3, 8);
+      const repriseV = (voulueV * vs < 0 ? ACCELERATION * 3 : ACCELERATION) * dt;
+      vs += THREE.MathUtils.clamp(voulueV - vs, -repriseV, repriseV);
+      s += vs * dt;
+      if (Math.abs(vs) > 0.5) sens = Math.sign(vs);
+      if (Math.abs(reste) < 0.05 && Math.abs(vs) < 0.3) {
+        if (phase === 'aller') { phase = 'clairiere'; enVariante.fiche.showModal(); }
+        else if (phase === 'retour') { enVariante = null; s = vs = 0; sens = 1; }
+      }
+    }
+    const allure = enVariante ? vs : vitesse, parcours = distance + (enVariante ? s : 0);
+
+    if (enVariante) {
+      enVariante.prolonge(s, foyer);
+      enVariante.tangente(Math.max(s, 0.5), tan);
+    } else {
+      sentier.point(distance, foyer);
+      sentier.tangente(distance, tan);
+    }
     coureur.racine.position.copy(foyer);
     // À l'arrivée : il s'arrête, souffle, se retourne vers nous, puis lève les bras. Au départ, l'inverse, en accéléré.
     const arrive = courante === n - 1 && Math.abs(arrivee - distance) < 0.6 && Math.abs(vitesse) < 2;
@@ -333,13 +497,20 @@ function lancer() {
       const w = entree * (1 - sortie);
       if (w > poids) { poids = w; proche = e; }
     });
-    camBase(distance, pos);
-    sentier.point(distance + 8, regard).setY(regard.y + 1.15);
+    // En s'engageant sur la variante, le regard quitte le panneau et suit la trace.
+    if (enVariante) {
+      poids *= 1 - lisse(s, 0, 6);
+      enVariante.prolonge(s - CAM_RECUL, pos).setY(pos.y + CAM_HAUT);
+      enVariante.prolonge(s + 8, regard).setY(regard.y + 1.15);
+    } else {
+      camBase(distance, pos);
+      sentier.point(distance + 8, regard).setY(regard.y + 1.15);
+    }
     // Sur grand écran le coureur reste le sujet : la caméra ne fait qu'entrouvrir le regard vers le panneau.
     cible.copy(regard).lerp(proche.centre, poids * (surLeCote ? visee : 1));
-    const pas = lisse(Math.abs(vitesse), 0.2, 4);
-    pos.y += 0.016 * pas * Math.sin(distance / 3.1 * Math.PI * 4);
-    pos.x += 0.012 * pas * Math.sin(distance / 3.1 * Math.PI * 2);
+    const pas = lisse(Math.abs(allure), 0.2, 4);
+    pos.y += 0.016 * pas * Math.sin(parcours / 3.1 * Math.PI * 4);
+    pos.x += 0.012 * pas * Math.sin(parcours / 3.1 * Math.PI * 2);
     // Devant un panneau, le regard revient à l'horizontale : le texte reste droit, même dans une pente.
     if (surLeCote) cible.y += (pos.y - cible.y) * poids;
     camera.position.copy(pos);
@@ -350,10 +521,23 @@ function lancer() {
     camera.setViewOffset(largeur, hauteur, ox, oy, largeur, hauteur);
 
     const angleRegard = poids > 0.4 ? proche.cote * -0.55 * poids * (1 - retournement) : 0;
-    const appui = coureur.animer(dt, duree, distance, vitesse, victoire, angleRegard, 4 * retournement * (1 - retournement));
+    const appui = coureur.animer(dt, duree, parcours, allure, victoire, angleRegard, 4 * retournement * (1 - retournement));
     if (appui) {
       particules.appui(foyer);
-      son.pas(Math.abs(vitesse));
+      son.pas(Math.abs(allure));
+    }
+
+    // L'indication n'apparaît qu'à l'arrêt devant un projet, ou pour rebrousser chemin en cours de variante.
+    const ici = etapes[courante];
+    const texte = enVariante ? (phase === 'aller' ? 'Revenir au sentier|Échap' : '')
+      : ici.variante && Math.abs(distance - ici.d) < 0.6 && Math.abs(vitesse) < 0.5 ? `Variante vers ${ici.variante.nom}|E` : '';
+    if (texte !== indiceActuel) {
+      indiceActuel = texte;
+      indice.hidden = !texte;
+      const [libelle, touche] = texte.split('|');
+      indiceTexte.textContent = libelle ?? '';
+      indiceTouche.textContent = touche ?? '';
+      indice.setAttribute('aria-label', touche ? `${libelle} (touche ${touche})` : libelle ?? '');
     }
 
     const avancement = THREE.MathUtils.clamp((distance - debut) / (arrivee - debut), 0, 1);
@@ -405,7 +589,7 @@ function lancer() {
 
   (document.fonts?.ready ?? Promise.resolve()).then(() => {
     disposer();
-    if (params.has('debug')) window.__sentier = { chrono: () => chronoArrivee, sonde: v => { sonde = v; }, poser: d => { pause = true; distance = d; }, sentier, meteo: meteo.etat, etapes, camera, scene, allerA, camBase, rendu, etape: () => courante, saut: () => { distance = etapes[courante].d; vitesse = 0; } };
+    if (params.has('debug')) window.__sentier = { chrono: () => chronoArrivee, sonde: v => { sonde = v; }, poser: d => { pause = true; distance = d; }, sentier, meteo: meteo.etat, etapes, camera, scene, allerA, camBase, rendu, etape: () => courante, saut: () => { distance = etapes[courante].d; vitesse = 0; }, variantes, prendre, phase: () => enVariante ? phase : 'sentier', sautVariante: () => { if (enVariante) { s = phase === 'retour' ? 0 : enVariante.longueur - 3; vs = 0; } } };
     requestAnimationFrame(t => { precedent = t; image(t); });
   });
 }

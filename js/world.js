@@ -413,7 +413,8 @@ function creerSol(sentier, hauteur, qualite, ambiance) {
 }
 
 // Un ruban transparent sur ses bords : le chemin se fond dans l'herbe au lieu de s'y découper.
-function creerChemin(sentier, ambiance) {
+// Une variante est une simple trace : plus étroite, elle naît en douceur sur le bord du sentier.
+function creerChemin(sentier, ambiance, variante = false) {
   const pos = [], col = [], uv = [], indices = [];
   const n = Math.floor(sentier.longueur);
   const t = V(0, 0, 0), a = V(0, 0, 0), terre = new THREE.Color('#a98c68'), pale = new THREE.Color('#c4a983'), c = new THREE.Color();
@@ -422,10 +423,11 @@ function creerChemin(sentier, ambiance) {
     sentier.point(i, a); sentier.tangente(i, t);
     for (let j = 0; j <= larg; j++) {
       const v = j / larg * 2 - 1;
-      const bord = 1.5 + fbm(i * 0.13, j * 3 + 2) * 0.8;
+      const bord = variante ? 0.8 + fbm(i * 0.2, j * 3 + 7) * 0.5 : 1.5 + fbm(i * 0.13, j * 3 + 2) * 0.8;
       pos.push(a.x - t.z * v * bord, a.y + 0.06, a.z + t.x * v * bord);
       c.copy(terre).lerp(pale, fbm(i * 0.3, j * 1.3));
-      col.push(c.r, c.g, c.b, (1 - lisse(Math.abs(v), 0.55, 1)) * lisse(Math.abs(i - PONT.d), PONT.demiLongueur - 2.2, PONT.demiLongueur - 1.2));
+      const fondu = variante ? lisse(i, 3, 8) * (1 - lisse(i, n - 5, n)) : lisse(Math.abs(i - PONT.d), PONT.demiLongueur - 2.2, PONT.demiLongueur - 1.2);
+      col.push(c.r, c.g, c.b, (1 - lisse(Math.abs(v), 0.55, 1)) * fondu);
       uv.push(v * 0.4, i / 4.5);
       if (i < n && j < larg) {
         const s = i * (larg + 1) + j;
@@ -569,6 +571,13 @@ function peupler(scene, liste, geo, mat, ombre, toutes, portee = Infinity) {
   }
 }
 
+// Le relief des collines, avant tout aplanissement : les variantes s'y posent sans creuser de tranchée.
+export function relief(sentier, x, z, n = sentier.plusProche(x, z)) {
+  const ecart = lisse(n.distance, 2.6, 26);
+  const h = n.y + ecart * ((fbm(x * 0.017 + 9, z * 0.017) * 2 - 1) * 15 + fbm(x * 0.09, z * 0.09) * 2.4 + n.distance * 0.1);
+  return h + lisse(n.distance, 1.6, 3.4) * (fbm(x * 0.4, z * 0.4) - 0.5) * 0.35;
+}
+
 export function creerMonde(scene, sentier, zones, qualite) {
   const r = hasard(1983);
   const temps = { value: 0 };
@@ -586,9 +595,7 @@ export function creerMonde(scene, sentier, zones, qualite) {
   // Les abords d'un panneau sont aplanis, pour que ses poteaux tombent sur un sol sage.
   const hauteur = (x, z) => {
     const n = sentier.plusProche(x, z);
-    const ecart = lisse(n.distance, 2.6, 26);
-    let h = n.y + ecart * ((fbm(x * 0.017 + 9, z * 0.017) * 2 - 1) * 15 + fbm(x * 0.09, z * 0.09) * 2.4 + n.distance * 0.1);
-    h += lisse(n.distance, 1.6, 3.4) * (fbm(x * 0.4, z * 0.4) - 0.5) * 0.35;
+    let h = relief(sentier, x, z, n);
     for (const f of zones.plats) {
       const k = lisse(Math.hypot(x - f.x, z - f.z), f.r, f.r + 7);
       h = mix(f.y, h, k);
@@ -601,6 +608,7 @@ export function creerMonde(scene, sentier, zones, qualite) {
   const ambiance = { uNeige: { value: 0 }, uMouille: { value: 0 }, uVent: { value: 1 } };
   scene.add(creerSol(sentier, hauteur, qualite, ambiance));
   scene.add(creerChemin(sentier, ambiance));
+  for (const v of zones.variantes) scene.add(creerChemin(v, ambiance, true));
   creerPont(scene, sentier, ambiance);
   const couler = creerRuisseau(scene, sentier, niveauEau, ambiance);
 
@@ -649,7 +657,7 @@ export function creerMonde(scene, sentier, zones, qualite) {
     const d = r() * sentier.longueur, p = sentier.point(d), t = sentier.tangente(d);
     const cote = (r() < 0.5 ? -1 : 1) * (1.5 + Math.pow(r(), 1.4) * 16);
     const x = p.x - t.z * cote, z = p.z + t.x * cote;
-    if (sentier.plusProche(x, z).distance > 1.4) ajouter('herbe', x, z, 0.5 + r() * 0.5);
+    if (sentier.plusProche(x, z).distance > 1.4 && zones.variantes.every(v => v.ecart(x, z) > 1.1)) ajouter('herbe', x, z, 0.5 + r() * 0.5);
   }
 
   // Des pierres longent l'eau : la rive a un bord naturel, sans les marches du maillage du terrain.

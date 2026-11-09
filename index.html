@@ -50,7 +50,7 @@
         <div><dt>2022 – 2024</dt><dd><strong>Epitech Marseille</strong><br>Master Expert en management des systèmes d'information, MSc Informatique</dd></div>
         <div><dt>2021 – 2022</dt><dd><strong>Epitech</strong><br>Pré-MSc Informatique</dd></div>
         <div><dt>2019 – 2021</dt><dd><strong>M2S formation</strong><br>Baccalauréat, sciences physiques</dd></div>
-        <div><dt>2025</dt><dd><strong>LVMH</strong><br>Création &amp; branding, retail et expérience client</dd></div>
+        <div><dt>2025</dt><dd><strong>LVMH</strong> · certification<br>Création &amp; branding, retail et expérience client</dd></div>
       </dl>
     </section>
 
@@ -84,7 +84,7 @@
       <ul class="etiquettes">
         <li>JavaScript sans build</li><li>Supabase</li><li>Vercel</li><li>n8n</li><li>Playwright</li>
       </ul>
-      <p class="sorties"><a href="https://github.com/APE-Florian-ANDRE/CarnetCourse">Voir le code</a></p>
+      <p class="sorties"><button type="button" class="explorer" data-vers="fiche-pacebook">Explorer le projet</button><a href="https://github.com/APE-Florian-ANDRE/CarnetCourse">Voir le code</a></p>
     </section>
 
     <section class="panneau" aria-labelledby="t-pulse">
@@ -95,6 +95,7 @@
       <ul class="etiquettes">
         <li>React Native</li><li>Expo</li><li>TypeScript</li><li>Swift</li><li>API Spotify</li><li>HealthKit</li>
       </ul>
+      <p class="sorties"><button type="button" class="explorer" data-vers="fiche-pulse">Explorer le projet</button></p>
     </section>
 
     <section class="panneau" aria-labelledby="t-ravito">
@@ -105,6 +106,7 @@
       <ul class="etiquettes">
         <li>React</li><li>TypeScript</li><li>Express</li><li>PostgreSQL</li><li>Prisma</li><li>Docker</li>
       </ul>
+      <p class="sorties"><button type="button" class="explorer" data-vers="fiche-ravito">Explorer le projet</button></p>
     </section>
 
     <section class="panneau" aria-labelledby="t-dedale">
@@ -115,17 +117,18 @@
       <ul class="etiquettes">
         <li>TypeScript</li><li>Canvas</li><li>Vite</li>
       </ul>
+      <p class="sorties"><button type="button" class="explorer" data-vers="fiche-dedale">Explorer le projet</button></p>
     </section>
 
     <section class="panneau" aria-labelledby="t-savoirs">
       <p class="balise" aria-hidden="true"><i></i><i></i></p>
       <h2 id="t-savoirs">Dans le sac</h2>
       <dl class="sac">
+        <div><dt>Transformation digitale</dt><dd>Analyse et optimisation des processus, automatisation des tâches manuelles, accompagnement des équipes au changement</dd></div>
+        <div><dt>Gestion de projet</dt><dd>Scrum et méthodes agiles, cadrage des besoins avec le métier, planning et suivi, animation des réunions client</dd></div>
         <div><dt>Langages</dt><dd>JavaScript, TypeScript, Python, Java, PowerShell</dd></div>
-        <div><dt>Interfaces</dt><dd>HTML, CSS, React, Three.js</dd></div>
-        <div><dt>Données</dt><dd>Supabase, PostgreSQL, règles RLS</dd></div>
-        <div><dt>Automatisation</dt><dd>n8n, fonctions Vercel, API de modèles d'IA</dd></div>
-        <div><dt>Méthode</dt><dd>Scrum, gestion de projet IT, tests Playwright</dd></div>
+        <div><dt>Web &amp; données</dt><dd>React, Three.js, Supabase, PostgreSQL</dd></div>
+        <div><dt>Automatisation</dt><dd>Scripts PowerShell, n8n, API d'IA, tests Playwright</dd></div>
       </dl>
     </section>
 
@@ -141,6 +144,128 @@
     </section>
   </main>
 </div>
+
+<!-- Les fiches projet : au bout de chaque variante balisée en jaune, ou directement depuis le panneau sans le sentier. -->
+<dialog class="fiche" id="fiche-pacebook" aria-labelledby="f-pacebook">
+  <p class="balise-variante" aria-hidden="true"></p>
+  <h2 id="f-pacebook">Pacebook</h2>
+  <p class="chapo">Un carnet d'entraînement complet, pensé pour fonctionner sans connexion.</p>
+  <div class="galerie">
+    <figure><img src="assets/projets/pacebook-accueil.jpg" alt="Page d'accueil de Pacebook : « Ton plan de course, calé sur ta vie », avec une séance de fractionné du jour" width="1200" height="750" loading="lazy"><figcaption>L'accueil&nbsp;: un plan prêt en deux minutes, même sans compte.</figcaption></figure>
+    <figure><img src="assets/projets/pacebook-semaine.jpg" alt="Vue Semaine de Pacebook : prochaine séance, footing facile et renfo, et les jours de la semaine avec allures et calories" width="1200" height="750" loading="lazy"><figcaption>La semaine&nbsp;: séances, allures et calories du jour.</figcaption></figure>
+    <figure class="telephone"><img src="assets/projets/pacebook-mobile.jpg" alt="Pacebook sur téléphone" width="416" height="900" loading="lazy"><figcaption>Sur téléphone.</figcaption></figure>
+  </div>
+  <div class="colonnes">
+    <section>
+      <h3>Ce qu'il fait</h3>
+      <ul>
+        <li>Plan de 4 à 52 semaines&nbsp;: course, trail, VTT, force ou remise en forme.</li>
+        <li>Allures et calories de chaque jour, avec un déficit prudent.</li>
+        <li>Ressenti après séance, import Apple Santé et Polar Flow, export vers le calendrier.</li>
+        <li>Un coach IA optionnel, avec consentement séparé et garde-fous.</li>
+      </ul>
+    </section>
+    <section>
+      <h3>Sous le capot</h3>
+      <ul>
+        <li>Site statique sans build ni script tiers&nbsp;: tout tourne dans le navigateur.</li>
+        <li>Comptes Google, Microsoft ou GitHub, données dans Supabase protégées par des règles RLS.</li>
+        <li>Coach branché sur un webhook n8n ou une fonction Vercel.</li>
+        <li>CSP stricte, en-têtes de sécurité, tests automatisés sans réseau.</li>
+      </ul>
+    </section>
+  </div>
+  <form method="dialog" class="sorties"><button>Revenir au sentier</button><a href="https://github.com/APE-Florian-ANDRE/CarnetCourse">Voir le code</a></form>
+</dialog>
+
+<dialog class="fiche" id="fiche-pulse" aria-labelledby="f-pulse">
+  <p class="balise-variante" aria-hidden="true"></p>
+  <h2 id="f-pulse">BPM Pulse</h2>
+  <p class="chapo">La musique qui suit le cœur&nbsp;: Spotify se cale sur l'intensité de l'effort.</p>
+  <div class="colonnes">
+    <section>
+      <h3>Ce qu'il fait</h3>
+      <ul>
+        <li>Lit le rythme cardiaque sur l'iPhone et l'Apple Watch, ou un BPM saisi à la main.</li>
+        <li>Dès que le BPM s'écarte de plus de 8&nbsp;% du tempo du morceau, il met en file trois titres au bon tempo.</li>
+        <li>Le bouton Boost vise 1,2 fois le BPM plus 10, entre 160 et 190, avec l'énergie au maximum.</li>
+        <li>Il continue en arrière-plan, écran éteint.</li>
+      </ul>
+    </section>
+    <section>
+      <h3>Sous le capot</h3>
+      <ul>
+        <li>React Native et Expo en TypeScript, avec du Swift pour HealthKit et la montre.</li>
+        <li>API Spotify en OAuth2, limitée aux droits de lecture et de pilotage.</li>
+        <li>La règle des 8&nbsp;% vit dans un service dédié, facile à tester.</li>
+        <li>Appels regroupés pour ne pas buter sur les limites de l'API.</li>
+      </ul>
+    </section>
+  </div>
+  <form method="dialog" class="sorties"><button>Revenir au sentier</button></form>
+</dialog>
+
+<dialog class="fiche" id="fiche-ravito" aria-labelledby="f-ravito">
+  <p class="balise-variante" aria-hidden="true"></p>
+  <h2 id="f-ravito">Ravito</h2>
+  <p class="chapo">Un suivi nutrition repas par repas, né d'une page autonome et devenu une application complète.</p>
+  <div class="galerie">
+    <figure class="telephone"><img src="assets/projets/ravito-recettes.jpg" alt="Onglet Recettes de Ravito : recettes maison avec calories et macros par portion" width="416" height="900" loading="lazy"><figcaption>Les recettes maison, à ajouter au journal en un geste.</figcaption></figure>
+    <figure class="telephone"><img src="assets/projets/ravito-progres.jpg" alt="Onglet Progrès de Ravito : graphiques des calories, protéines, fibres et eau" width="416" height="900" loading="lazy"><figcaption>Les progrès, jour après jour.</figcaption></figure>
+  </div>
+  <div class="colonnes">
+    <section>
+      <h3>Ce qu'il fait</h3>
+      <ul>
+        <li>Calories, protéines, fibres, glucides, lipides, eau et poids.</li>
+        <li>Un journal repas par repas et dix-sept recettes maison.</li>
+        <li>Des objectifs réglables pour chaque compte.</li>
+      </ul>
+    </section>
+    <section>
+      <h3>Sous le capot</h3>
+      <ul>
+        <li>React et TypeScript avec Vite, styles écrits à la main.</li>
+        <li>API Express, comptes sécurisés par JWT et mots de passe hachés.</li>
+        <li>PostgreSQL avec Prisma&nbsp;: migrations et données de départ.</li>
+        <li>Le tout lancé en une commande avec Docker Compose.</li>
+      </ul>
+    </section>
+  </div>
+  <form method="dialog" class="sorties"><button>Revenir au sentier</button></form>
+</dialog>
+
+<dialog class="fiche" id="fiche-dedale" aria-labelledby="f-dedale">
+  <p class="balise-variante" aria-hidden="true"></p>
+  <h2 id="f-dedale">Dédale</h2>
+  <p class="chapo">Un jeu en pixel art écrit sans moteur&nbsp;: dix cartes à traverser, de la salle d'accueil à la lave.</p>
+  <div class="galerie">
+    <figure><img src="assets/projets/dedale-depart.jpg" alt="Dédale : la salle de départ, gardée par des statues" width="1000" height="666" loading="lazy"><figcaption>La salle de départ.</figcaption></figure>
+    <figure><img src="assets/projets/dedale-eau.jpg" alt="Dédale : la carte de l'eau, un chemin de pierre autour d'un lac" width="1000" height="666" loading="lazy"><figcaption>La carte de l'eau.</figcaption></figure>
+    <figure><img src="assets/projets/dedale-buissons.jpg" alt="Dédale : la carte des buissons, une prairie bordée de terre" width="1000" height="666" loading="lazy"><figcaption>Les buissons.</figcaption></figure>
+  </div>
+  <div class="colonnes">
+    <section>
+      <h3>Ce qu'il fait</h3>
+      <ul>
+        <li>Dix cartes enchaînées&nbsp;: squelettes, eau, buissons, lave, puis l'arrivée.</li>
+        <li>Déplacement en ZQSD ou aux flèches, Espace pour s'arrêter net, R pour recharger.</li>
+      </ul>
+    </section>
+    <section>
+      <h3>Sous le capot</h3>
+      <ul>
+        <li>TypeScript strict et Vite, rendu sur un canvas 2D.</li>
+        <li>Tuiles de 32&nbsp;px, personnage animé sur trois images.</li>
+        <li>Collisions calculées aux pieds, boucle fixe à 60&nbsp;Hz.</li>
+        <li>Niveaux décrits en JSON, avec leurs sorties et points d'apparition.</li>
+      </ul>
+    </section>
+  </div>
+  <form method="dialog" class="sorties"><button>Revenir au sentier</button></form>
+</dialog>
+
+<button id="variante" type="button" hidden><i class="balise-variante" aria-hidden="true"></i><span id="variante-texte"></span><kbd>E</kbd></button>
 
 <div id="tableau" hidden>
   <div id="modes" class="modes">
