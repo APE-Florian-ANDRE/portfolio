@@ -84,17 +84,26 @@ a { color: inherit; }
 
 .periode { font-family: var(--titres); font-weight: 700; font-size: .92rem; color: rgb(230 220 198 / .75); }
 .panneau .periode { margin-bottom: .8em; }
-.entete { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
-.panneau .entete .periode { margin-bottom: 0; }
-.entete + p { margin-top: .8em; }
-/* La photo en médaillon ; en attendant, les initiales sur la couleur du balisage. */
-.portrait {
-  flex: none; display: grid; place-items: center;
-  width: 88px; height: 88px; border-radius: 50%;
-  border: 3px solid var(--grave);
-  background: var(--balise-rouge); object-fit: cover;
-  font: 900 1.8rem var(--titres); color: var(--grave);
+/* Le panneau de présentation fait office de couverture : le portrait en buste, l'accroche, trois repères. */
+.panneau-hero { display: grid; grid-template-columns: minmax(0, 190px) 1fr; gap: 24px; align-items: center; }
+.buste {
+  display: block; width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: cover;
+  border: 3px solid var(--grave); box-shadow: 7px 7px 0 var(--balise-rouge);
 }
+.accroche { font: 700 1.15rem/1.3 var(--titres); }
+/* Le poste actuel passe avant tout le reste, signalé comme une balise. */
+.panneau .poste { margin: .2em 0 .6em; font: 700 1rem/1.35 var(--titres); }
+.poste span {
+  display: inline-block; margin-right: 6px; padding: 2px 7px 1px;
+  background: var(--balise-rouge); color: var(--grave);
+  font-size: .78rem; letter-spacing: .04em; text-transform: uppercase; vertical-align: 1px;
+}
+.reperes {
+  display: flex; flex-wrap: wrap; gap: 6px 22px;
+  margin: 14px 0 0; padding: 12px 0 0; border-top: 1px solid var(--grave-doux); list-style: none;
+}
+.reperes li { display: grid; font-size: .85rem; color: rgb(230 220 198 / .78); }
+.reperes strong { font: 900 1.05rem/1.2 var(--titres); color: var(--grave); }
 
 .sorties { display: flex; flex-wrap: wrap; gap: 10px; }
 .sorties a, .sorties button {
@@ -185,6 +194,7 @@ a { color: inherit; }
   backface-visibility: hidden;
 }
 .monde .chapo { font-size: 1.05rem; }
+.monde .panneau-hero { width: min(590px, calc(100vw - 32px)); }
 
 #tableau {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
@@ -236,8 +246,23 @@ a { color: inherit; }
   content: ""; position: absolute; left: 50%; bottom: 0; top: 10px; width: 3px; margin-left: -1.5px;
   background: rgb(255 255 255 / .7);
 }
-.etape:hover::after, .etape:focus-visible::after { width: 7px; margin-left: -3.5px; }
+.etape:hover::after, .etape:focus-visible::after, .etape.annonce::after { width: 7px; margin-left: -3.5px; background: var(--balise-jaune); }
 .etape:focus-visible { outline-color: #fff; }
+/* Le nom de l'étape surgit en surbrillance au survol d'un repère, et quand le coureur y arrive. */
+.etape-nom {
+  position: absolute; left: 50%; bottom: calc(100% + 4px);
+  padding: 4px 9px 3px; border-radius: 3px;
+  background: var(--balise-jaune); color: var(--sous-bois); text-shadow: none;
+  box-shadow: 0 3px 12px rgb(0 0 0 / .35);
+  font: 700 .85rem var(--titres); white-space: nowrap;
+  opacity: 0; transform: translate(-50%, 5px); pointer-events: none;
+  transition: opacity .15s, transform .15s;
+}
+.etape[data-bord="debut"] .etape-nom { left: 0; transform: translate(0, 5px); }
+.etape[data-bord="fin"] .etape-nom { left: auto; right: 0; transform: translate(0, 5px); }
+.etape:hover .etape-nom, .etape:focus-visible .etape-nom, .etape.annonce .etape-nom { opacity: 1; transform: translate(-50%, 0); }
+.etape[data-bord]:hover .etape-nom, .etape[data-bord]:focus-visible .etape-nom, .etape[data-bord].annonce .etape-nom { transform: none; }
+.etape:hover, .etape:focus-visible { z-index: 1; }
 
 #son {
   min-height: 44px; padding: 0 12px;
@@ -258,12 +283,21 @@ a { color: inherit; }
 .credit { margin: 0 0 3px; font-size: .72rem; }
 .credit a { color: rgb(255 255 255 / .8); }
 
+/* Faute de place au bord du chemin, le portrait garde son buste mais rétrécit, et le texte l'habille. */
+@media (max-width: 1279px) {
+  .panneau-hero { display: block; }
+  .monde .panneau-hero { width: min(420px, calc(100vw - 32px)); }
+  .buste { float: left; width: 112px; margin: 2px 18px 10px 0; box-shadow: 5px 5px 0 var(--balise-rouge); }
+  .reperes { clear: both; margin-top: 10px; padding-top: 8px; }
+}
+
 @media (max-width: 620px) {
   body { font-size: 1rem; }
   .panneau { padding: 20px 20px 22px; }
   .chapo { font-size: 1.15rem; }
   .panneau .balise { margin-bottom: 12px; }
   .sac div { grid-template-columns: 1fr; }
+  .accroche { font-size: 1.02rem; }
   .fiche { padding: 20px 20px 22px; }
   .galerie { margin: 0 -20px 18px; padding: 0 20px 8px; scroll-padding: 0 20px; }
   .galerie img { height: clamp(180px, 38vh, 300px); }

@@ -32,7 +32,7 @@ function lancer() {
   const L = sentier.longueur;
 
   // Les étapes sont posées juste après les virages du tracé.
-  const positions = [22, 82, 140, 196, 252, 312, 372, 432, 502, 592, L - 44];
+  const positions = [22, 68, 114, 150, 205, 252, 312, 372, 432, 502, 592, L - 44];
   const TRAVERSEE = 3.6, ACCELERATION = 30; // secondes à pleine allure entre deux panneaux, m/s²
   const SEUIL_GESTE = 80, FIN_GESTE = 200; // pixels de défilement pour changer d'étape, ms de pause
   const ENTRE_CRANS = 600; // ms minimum entre deux crans dans le même sens
@@ -358,7 +358,7 @@ function lancer() {
 
   const indice = document.getElementById('variante');
   const indiceTexte = document.getElementById('variante-texte'), indiceTouche = indice.querySelector('kbd');
-  let indiceActuel = '';
+  let indiceActuel = '', annoncee = -1, finAnnonce = 0;
   if (matchMedia('(pointer: coarse)').matches) document.documentElement.classList.add('tactile');
   indice.addEventListener('click', () => enVariante ? rebrousser() : prendre(etapes[courante].variante));
 
@@ -379,9 +379,19 @@ function lancer() {
     b.type = 'button';
     b.className = 'etape';
     b.style.left = `${px(e.d) / 10}%`;
-    b.title = e.el.querySelector('h1, h2').textContent;
-    b.setAttribute('aria-label', `Aller à : ${b.title}`);
+    const nom = e.el.querySelector('h1, h2').textContent;
+    b.setAttribute('aria-label', `Aller à : ${nom}`);
+    // L'étiquette ne déborde jamais de l'écran : aux deux bouts du profil, elle s'aligne sur le repère.
+    const etiquette = document.createElement('span');
+    etiquette.className = 'etape-nom';
+    etiquette.textContent = i === 0 ? 'Départ' : nom;
+    etiquette.setAttribute('aria-hidden', 'true');
+    b.append(etiquette);
+    const x = px(e.d) / 1000;
+    if (x < 0.12) b.dataset.bord = 'debut';
+    else if (x > 0.88) b.dataset.bord = 'fin';
     b.addEventListener('click', () => allerA(i));
+    e.repere = b;
     profil.append(b);
   });
   // Un lien atteint au clavier amène le coureur jusqu'à son panneau.
@@ -549,8 +559,17 @@ function lancer() {
       son.pas(Math.abs(allure));
     }
 
-    // L'indication n'apparaît qu'à l'arrêt devant un projet, ou pour rebrousser chemin en cours de variante.
+    // À l'arrivée sur une étape, son nom s'allume un instant sur le profil.
     const ici = etapes[courante];
+    const arrete = !enVariante && Math.abs(distance - ici.d) < 0.6 && Math.abs(vitesse) < 0.5;
+    if (arrete && annoncee !== courante) {
+      annoncee = courante;
+      clearTimeout(finAnnonce);
+      for (const e of etapes) e.repere.classList.toggle('annonce', e === ici);
+      finAnnonce = setTimeout(() => ici.repere.classList.remove('annonce'), 2400);
+    }
+
+    // L'indication n'apparaît qu'à l'arrêt devant un projet, ou pour rebrousser chemin en cours de variante.
     const texte = enVariante ? (phase === 'aller' ? 'Revenir au sentier|Échap' : '')
       : ici.variante && Math.abs(distance - ici.d) < 0.6 && Math.abs(vitesse) < 0.5 ? `Variante vers ${ici.variante.nom}|E` : '';
     if (texte !== indiceActuel) {
