@@ -84,8 +84,36 @@ a { color: inherit; }
 
 .periode { font-family: var(--titres); font-weight: 700; font-size: .92rem; color: rgb(230 220 198 / .75); }
 .panneau .periode { margin-bottom: .8em; }
+
+/* Le livre des expériences : les pages s'empilent, seule la page ouverte se voit. */
+.livre { display: grid; perspective: 1600px; }
+.page { grid-area: 1 / 1; min-width: 0; visibility: hidden; transform-origin: left center; }
+.page.ouverte, .page.dessous, .page.tourne-avant, .page.tourne-arriere { visibility: visible; }
+.page.tourne-avant, .page.tourne-arriere {
+  z-index: 2; background: var(--planche); box-shadow: 6px 0 18px rgb(0 0 0 / .35);
+  backface-visibility: hidden; pointer-events: none;
+}
+.page.tourne-avant { animation: tourne-avant .6s ease-in forwards; }
+.page.tourne-arriere { animation: tourne-avant .6s ease-out reverse forwards; }
+@keyframes tourne-avant {
+  from { transform: rotateY(0); }
+  80% { opacity: 1; }
+  to { transform: rotateY(-100deg); opacity: 0; }
+}
+.page h3 { margin: 0 0 .2em; font: 800 1.45rem/1.1 var(--titres); color: var(--balise-jaune); }
+.feuilleter {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 14px 0 0; padding-top: 10px; border-top: 1px solid var(--grave-doux);
+}
+.folio { font: 700 .85rem var(--titres); color: rgb(230 220 198 / .75); font-variant-numeric: tabular-nums; }
+.tourner {
+  font: 700 .92rem var(--titres); color: var(--grave); background: var(--planche-sombre);
+  border: 1px solid var(--grave-doux); border-radius: 2px; padding: 6px 12px; cursor: pointer;
+}
+.tourner:hover:not(:disabled) { border-color: var(--grave); }
+.tourner:disabled { opacity: .35; cursor: default; }
 /* Le panneau de présentation fait office de couverture : le portrait en buste, l'accroche, trois repères. */
-.panneau-hero { display: grid; grid-template-columns: minmax(0, 190px) 1fr; gap: 24px; align-items: center; }
+.panneau-hero, .monde .panneau-hero > .contenu { display: grid; grid-template-columns: minmax(0, 190px) 1fr; gap: 24px; align-items: center; }
 .buste {
   display: block; width: 100%; height: auto; aspect-ratio: 3 / 4; object-fit: cover;
   border: 3px solid var(--grave); box-shadow: 7px 7px 0 var(--balise-rouge);
@@ -193,6 +221,43 @@ a { color: inherit; }
   font-size: .95rem; line-height: 1.45;
   backface-visibility: hidden;
 }
+.monde .panneau { display: flex; flex-direction: column; }
+.monde .contenu { min-height: 0; align-content: start; }
+.monde .panneau.repliable > .contenu { position: relative; overflow: clip; }
+/* Tant que le panneau est replié, le texte s'estompe dans le bois au-dessus du bouton. */
+.monde .panneau.repliable > .contenu::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; height: 44px;
+  background: linear-gradient(rgb(94 74 56 / 0), var(--planche) 85%);
+  pointer-events: none; transition: opacity .3s;
+}
+.monde .panneau.deplie > .contenu::after { opacity: 0; }
+.suite { display: none; }
+.monde .panneau.repliable > .suite {
+  display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0;
+  margin: 10px auto 0; padding: 6px 16px;
+  font: 700 .92rem var(--titres); color: var(--grave); background: var(--planche-sombre);
+  border: 1px solid var(--grave-doux); border-radius: 2px; cursor: pointer;
+}
+.monde .panneau.repliable > .suite::after {
+  content: ""; width: 7px; height: 7px; margin-top: -4px;
+  border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg); transition: transform .3s, margin .3s;
+}
+.monde .panneau.deplie > .suite::after { transform: rotate(-135deg); margin-top: 3px; }
+.monde .panneau.repliable > .suite:hover { border-color: var(--grave); }
+.feuilleter { flex-shrink: 0; }
+/* Pendant la chute, le panneau ne montre que sa partie haute, jusqu'à la cassure. */
+.monde .panneau.en-chute { padding-bottom: 0; }
+.monde .panneau.en-chute > .suite, .monde .panneau.en-chute > .feuilleter { display: none; }
+.monde .panneau.en-chute > .contenu::after { opacity: 0; transition: none; }
+/* La planche qui a lâché, et la fissure qui reste une fois retombée. */
+.planche-cassee { overflow: clip; pointer-events: none; backface-visibility: hidden; }
+.planche-cassee::after, .monde .panneau.deplie::after {
+  content: ""; position: absolute; left: 0; right: 0; z-index: 2; height: 3px; pointer-events: none;
+  background: linear-gradient(90deg, rgb(0 0 0 / .55), rgb(0 0 0 / .2) 35%, rgb(0 0 0 / .45) 70%, rgb(0 0 0 / .6));
+}
+.planche-cassee::after { top: 0; }
+.monde .panneau.deplie::after { top: calc(var(--fissure) - 1px); }
+.planche-cassee > .panneau::after { display: none; }
 .monde .chapo { font-size: 1.05rem; }
 .monde .panneau-hero { width: min(590px, calc(100vw - 32px)); }
 
@@ -285,7 +350,7 @@ a { color: inherit; }
 
 /* Faute de place au bord du chemin, le portrait garde son buste mais rétrécit, et le texte l'habille. */
 @media (max-width: 1279px) {
-  .panneau-hero { display: block; }
+  .panneau-hero, .monde .panneau-hero > .contenu { display: block; }
   .monde .panneau-hero { width: min(420px, calc(100vw - 32px)); }
   .buste { float: left; width: 112px; margin: 2px 18px 10px 0; box-shadow: 5px 5px 0 var(--balise-rouge); }
   .reperes { clear: both; margin-top: 10px; padding-top: 8px; }

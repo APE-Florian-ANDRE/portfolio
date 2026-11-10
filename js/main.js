@@ -18,6 +18,42 @@ document.addEventListener('click', ev => {
   if (bouton) explorer(document.getElementById(bouton.dataset.vers));
 });
 
+// Le panneau Expériences se feuillette : une page par employeur, la plus récente d'abord.
+for (const livre of document.querySelectorAll('.panneau-livre')) {
+  const pages = [...livre.querySelectorAll('.page')];
+  const folio = livre.querySelector('.folio');
+  const [precedente, suivante] = livre.querySelectorAll('.tourner');
+  let ouverte = 0;
+  const afficher = () => {
+    pages.forEach((page, i) => {
+      page.inert = i !== ouverte;
+      page.classList.toggle('ouverte', i === ouverte);
+    });
+    folio.textContent = `${ouverte + 1} / ${pages.length}`;
+    precedente.disabled = ouverte === 0;
+    suivante.disabled = ouverte === pages.length - 1;
+  };
+  livre.addEventListener('click', ev => {
+    const bouton = ev.target.closest('.tourner');
+    if (!bouton) return;
+    const sens = Number(bouton.dataset.sens), vers = ouverte + sens;
+    if (vers < 0 || vers >= pages.length) return;
+    // La page qui tourne pivote autour de la reliure, par-dessus celle qu'elle découvre ou recouvre.
+    const tourne = pages[sens > 0 ? ouverte : vers], dessous = pages[sens > 0 ? vers : ouverte];
+    if (!sansMouvement) {
+      const classe = sens > 0 ? 'tourne-avant' : 'tourne-arriere';
+      for (const page of pages) page.classList.remove('tourne-avant', 'tourne-arriere', 'dessous');
+      void tourne.offsetWidth;
+      tourne.classList.add(classe);
+      dessous.classList.add('dessous');
+      tourne.addEventListener('animationend', () => tourne.classList.remove(classe) || dessous.classList.remove('dessous'), { once: true });
+    }
+    ouverte = vers;
+    afficher();
+  });
+  afficher();
+}
+
 if (essai && !sansMouvement && !params.has('plat')) lancer();
 
 function lancer() {
@@ -27,17 +63,36 @@ function lancer() {
 
   const hote = document.getElementById('monde');
   const sections = [...document.querySelectorAll('.panneau')];
+  // Un panneau trop long se replie dans une enveloppe : Chrome ne transmet plus la souris
+  // à un élément transformé en 3D qui rogne lui-même son contenu.
+  for (const el of sections) {
+    const contenu = document.createElement('div');
+    contenu.className = 'contenu';
+    // La barre pour tourner les pages reste en pied de panneau, sous la partie repliée.
+    contenu.append(...[...el.childNodes].filter(n => !n.classList?.contains('feuilleter')));
+    el.prepend(contenu);
+    const suite = document.createElement('button');
+    suite.type = 'button';
+    suite.className = 'suite';
+    suite.setAttribute('aria-expanded', 'false');
+    suite.textContent = 'Voir la suite';
+    contenu.after(suite);
+  }
   const sentier = creerSentier();
   let distance = 0;
   const L = sentier.longueur;
 
   // Les étapes sont posées juste après les virages du tracé.
-  const positions = [22, 68, 114, 150, 205, 252, 312, 372, 432, 502, 592, L - 44];
+  const positions = [22, 68, 114, 150, 205, 312, 372, 432, 502, 592, L - 44];
   const TRAVERSEE = 3.6, ACCELERATION = 30; // secondes à pleine allure entre deux panneaux, m/s²
   const SEUIL_GESTE = 80, FIN_GESTE = 200; // pixels de défilement pour changer d'étape, ms de pause
   const ENTRE_CRANS = 600; // ms minimum entre deux crans dans le même sens
   const VISEE = 0.46; // part du regard accordée au panneau sur grand écran
   const CAM_RECUL = 4.6, CAM_HAUT = 1.7, DEVANT = 2.2, RECUL_PANNEAU = CAM_RECUL + DEVANT;
+  const HAUT_MAX_PANNEAU = 620; // pixels : au-delà, le panneau se replie et « Voir la suite » le déplie
+  const HAUT_MAX_LIVRE = 470, HAUT_MAX_COMPACT = 400; // le livre et « Dans le sac » se replient plus court
+  // La planche cassée : un balancier amorti autour de sa charnière, et un clou qui la laisse pencher.
+  const CHUTE = { depart: 1.45, raideur: 46, amorti: 5, raideurBiais: 34, amortiBiais: 5, secousse: 1.6, remontee: 14, echelle: 0.6 };
   const camBase = (d, c = new THREE.Vector3()) => sentier.point(d - CAM_RECUL, c).setY(c.y + CAM_HAUT);
 
   const etapes = sections.map((el, i) => {
@@ -248,7 +303,7 @@ function lancer() {
     poteau(v.point(v.longueur).addScaledVector(t, 1.6), new THREE.Vector3(-t.z, 0, t.x));
   }
 
-  let largeur = 1, hauteur = 1, surLeCote = true, visee = VISEE;
+  let largeur = 1, hauteur = 1, surLeCote = true, visee = VISEE, geo = null;
   const vue = new THREE.Vector3(), axeX = new THREE.Vector3();
 
   function disposer() {
@@ -267,60 +322,214 @@ function lancer() {
     const metresParPixel = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * RECUL_PANNEAU / hauteur;
     const reserveTableau = 84;
 
+    geo = { metresParPixel, place: hauteur - reserveTableau - 32, portrait };
     for (const e of etapes) {
-      const w = e.el.offsetWidth, h = e.el.offsetHeight;
-      const place = hauteur - reserveTableau - 32;
-      const reduction = Math.min(1, place / h, (largeur - 24) / w);
-      const s = metresParPixel * reduction;
-      const lw = w * s, lh = h * s;
-      const auDessus = portrait;
+      // Un panneau trop long se replie : on mesure ses deux hauteurs, bouton compris.
+      const plafond = e.el.matches('.panneau-livre') ? HAUT_MAX_LIVRE : e.el.matches('.panneau-compact') ? HAUT_MAX_COMPACT : HAUT_MAX_PANNEAU;
+      e.el.style.maxHeight = '';
+      e.el.classList.remove('repliable');
+      const nu = e.el.offsetHeight;
+      e.el.classList.add('repliable');
+      e.hPlein = e.el.offsetHeight;
+      e.hRepli = Math.min(e.hPlein, Math.max(240, Math.min(geo.place, plafond)));
+      // Un panneau qui tient sans le bouton n'a pas à se replier.
+      e.repliable = nu > e.hRepli + 1;
+      e.el.classList.toggle('repliable', e.repliable);
+      e.etat ??= 'replie';
+      e.ajuste = e.ajusteCible = e.ajusteAffiche = 1;
+      e.transition = e.etat === 'replie' ? 0 : 1;
+      e.el.style.setProperty('--fissure', `${e.hRepli}px`);
+      placer(e);
+    }
+  }
 
-      const centre = new THREE.Vector3();
-      if (auDessus) {
-        // Le panneau enjambe le sentier : le coureur passe dessous.
-        sentier.point(e.d + DEVANT, centre);
-        centre.y += 2.45 + lh / 2;
-        e.ox = 0;
-        e.oy = hauteur / 2 - (h * reduction) / 2 - 18;
-      } else {
-        centre.copy(e.lateral);
-        centre.y = e.sol.y + 0.65 + lh / 2;
-        e.ox = 0;
-        // La caméra reste à l'horizontale : dans une montée, on décale l'image pour garder le haut du panneau.
-        const hautPanneau = (centre.y + lh / 2 - e.cam.y) / metresParPixel;
-        // Dans une descente, c'est le coureur qui glisserait sous le tableau de bord : on remonte l'image.
-        const piedsCoureur = (e.cam.y - sentier.point(e.d).y) / (metresParPixel * CAM_RECUL / RECUL_PANNEAU);
-        // La marge couvre aussi la perspective : un panneau un peu plus proche paraît plus grand que prévu.
-        const marge = hauteur / 2 - 46 - hautPanneau;
-        e.oy = marge < 0 ? marge : Math.max(0, Math.min(piedsCoureur - (hauteur / 2 - 150), marge));
+  // Place un panneau, ses poteaux et le cadrage de la caméra devant lui.
+  // Pendant la chute de la planche cassée, ou sa remontée, le panneau ne montre que sa partie haute,
+  // posée à sa place définitive : la planche montre le reste.
+  function placer(e) {
+    const { metresParPixel, place, portrait } = geo;
+    const ouvert = e.repliable && e.etat !== 'replie', entier = !e.repliable || e.etat !== 'chute' && e.etat !== 'remonte';
+    e.el.style.maxHeight = e.repliable ? `${e.etat === 'deplie' ? e.hPlein : e.hRepli}px` : '';
+    e.el.classList.toggle('en-chute', !entier);
+    const w = e.el.offsetWidth, h0 = e.repliable ? e.hRepli : e.el.offsetHeight, h = ouvert ? e.hPlein : h0;
+    // Déplié, le panneau peut rapetisser (e.ajuste) pour ne pas passer sous le tableau de bord ;
+    // il y glisse en douceur pendant la chute plutôt que d'un coup.
+    const r0 = Math.min(1, place / h0, (largeur - 24) / w), r1 = Math.min(1, place / h, (largeur - 24) / w) * e.ajuste;
+    const t = e.transition * e.transition * (3 - 2 * e.transition);
+    const reduction = ouvert ? THREE.MathUtils.lerp(r0, r1, t) : r0;
+    const s = metresParPixel * reduction;
+    const s0 = metresParPixel * r0;
+    const lw = w * s, lh = h * s, lh0 = h0 * s0;
+    const auDessus = portrait;
+
+    const centre = new THREE.Vector3();
+    if (auDessus) {
+      // Le panneau enjambe le sentier : le coureur passe dessous.
+      sentier.point(e.d + DEVANT, centre);
+      centre.y += 2.45 + lh0 - lh / 2;
+      e.ox = 0;
+      e.oy = hauteur / 2 - lh0 / metresParPixel / 2 - 18;
+    } else {
+      centre.copy(e.lateral);
+      centre.y = e.sol.y + 0.65 + lh0 - lh / 2;
+      e.ox = 0;
+      // La caméra reste à l'horizontale : dans une montée, on décale l'image pour garder le haut du panneau.
+      const hautPanneau = (e.sol.y + 0.65 + lh0 - e.cam.y) / metresParPixel;
+      // Dans une descente, c'est le coureur qui glisserait sous le tableau de bord : on remonte l'image.
+      const piedsCoureur = (e.cam.y - sentier.point(e.d).y) / (metresParPixel * CAM_RECUL / RECUL_PANNEAU);
+      // La marge couvre aussi la perspective : un panneau un peu plus proche paraît plus grand que prévu.
+      const marge = hauteur / 2 - 46 - hautPanneau;
+      e.oy = marge < 0 ? marge : Math.max(0, Math.min(piedsCoureur - (hauteur / 2 - 150), marge));
+    }
+    // Déplié, le panneau garde son haut : sa partie basse descend devant le chemin et les herbes,
+    // et la caméra garde exactement le cadrage du panneau replié.
+    e.centre = centre;
+    e.mire = centre.clone().setY(centre.y + (lh - lh0) / 2);
+
+    // Le panneau reste parallèle à l'image, pour qu'il ne paraisse jamais de travers à l'arrêt.
+    const vise = sentier.point(e.d + 8).setY(0).lerp(centre.clone().setY(0), portrait ? 1 : visee);
+    const lhVu = entier ? lh : h0 * s;
+    const centreVu = centre.clone().setY(centre.y + (lh - lhVu) / 2);
+    // Visé depuis sa propre hauteur, il reste d'aplomb quelle que soit la partie montrée.
+    const face = centreVu.clone().add(e.cam.clone().setY(0).sub(vise).setY(0));
+    e.objet.position.copy(centreVu);
+    e.objet.scale.setScalar(s);
+    e.objet.lookAt(face);
+    e.fenetre.position.copy(centreVu);
+    e.fenetre.quaternion.copy(e.objet.quaternion);
+    e.fenetre.scale.set(lw, lhVu, 1);
+    e.charniere = centreVu.clone().setY(centreVu.y - lhVu / 2);
+    e.planche = { lw, lp: lh - lhVu, s };
+
+    axeX.set(1, 0, 0).applyQuaternion(e.objet.quaternion);
+    vue.set(0, 0, 1).applyQuaternion(e.objet.quaternion);
+    e.vue = vue.clone();
+    e.cadre.position.copy(centreVu).addScaledVector(vue, -0.05);
+    e.cadre.quaternion.copy(e.objet.quaternion);
+    e.cadre.scale.set(lw + 0.08, lhVu + 0.08, 0.08);
+
+    const sol = auDessus ? sentier.point(e.d + DEVANT).y : e.sol.y;
+    const hautPoste = centre.y + lh * 0.2;
+    for (const [poste, c] of [[e.posteG, -1], [e.posteD, 1]]) {
+      poste.position.copy(centre).addScaledVector(axeX, c * (lw / 2 - lw * 0.06)).addScaledVector(vue, -0.13);
+      poste.position.y = (sol + hautPoste) / 2;
+      poste.scale.set(1, Math.max(0.05, hautPoste - sol + 0.3), 1);
+    }
+  }
+
+  // « Voir la suite » : le bas du panneau, délabré, lâche et tombe en se balançant sur sa charnière ;
+  // « Replier » le remonte. Quitter le panneau le replie aussi.
+  const ouvertOuOuvrant = e => e.etat === 'chute' || e.etat === 'deplie';
+  const deplier = (e, oui) => {
+    if (!e.repliable || oui === ouvertOuOuvrant(e)) return;
+    const bouton = e.el.querySelector('.suite');
+    bouton.setAttribute('aria-expanded', String(oui));
+    bouton.textContent = oui ? 'Replier' : 'Voir la suite';
+    e.el.classList.toggle('deplie', oui);
+    const dejaLa = e.chute;
+    if (oui && e.etat === 'replie') e.ajuste = e.ajusteCible = prevoirAjuste(e);
+    e.etat = oui ? 'chute' : 'remonte';
+    placer(e);
+    e.chute ??= creerPlanche(e);
+    // Une planche déjà en mouvement repart de là où elle en est.
+    if (!dejaLa) Object.assign(e.chute, { angle: oui ? CHUTE.depart : 0, biais: 0, vBiais: 0 });
+    Object.assign(e.chute, { vitesse: 0, secoue: !oui, t: 0 });
+    poserPlanche(e);
+  };
+  for (const e of etapes) e.el.querySelector('.suite').addEventListener('click', () => deplier(e, !ouvertOuOuvrant(e)));
+
+  // Le panneau replié affiché donne sa taille à l'écran : on en déduit celle du panneau entier,
+  // et de combien il doit rapetisser pour s'arrêter au-dessus du tableau de bord.
+  const limiteBas = () => (surLeCote ? hauteur - 84 : elModes.getBoundingClientRect().top) - 10;
+  function prevoirAjuste(e) {
+    const r = e.el.getBoundingClientRect(), w = e.el.offsetWidth, { place } = geo;
+    if (!r.height) return 1;
+    const r0 = Math.min(1, place / e.hRepli, (largeur - 24) / w), r1 = Math.min(1, place / e.hPlein, (largeur - 24) / w);
+    const plein = r.height * (e.hPlein / e.hRepli) * (r1 / r0);
+    // Un peu de marge : la perspective grossit le bas, et une correction après coup se verrait.
+    return THREE.MathUtils.clamp((limiteBas() - 8 - r.top) / plein, 0.6, 1);
+  }
+
+  // La planche cassée est une copie de la partie basse du panneau déplié, avec sa fenêtre et son dos en bois.
+  const AXE_X = new THREE.Vector3(1, 0, 0), AXE_Z = new THREE.Vector3(0, 0, 1);
+  const qBascule = new THREE.Quaternion(), qBiais = new THREE.Quaternion();
+  function creerPlanche(e) {
+    const el = document.createElement('div');
+    el.className = 'planche-cassee';
+    el.inert = true;
+    el.setAttribute('aria-hidden', 'true');
+    const copie = e.el.cloneNode(true);
+    copie.removeAttribute('aria-labelledby');
+    for (const n of [copie, ...copie.querySelectorAll('[id]')]) n.removeAttribute('id');
+    copie.classList.remove('en-chute');
+    copie.classList.add('deplie');
+    copie.querySelector('.suite').textContent = 'Replier';
+    copie.style.cssText = `position: absolute; left: 0; top: ${-e.hRepli}px; width: ${e.el.offsetWidth}px; max-height: none;`;
+    el.append(copie);
+    el.style.width = `${e.el.offsetWidth}px`;
+    el.style.height = `${e.hPlein - e.hRepli}px`;
+    const objet = new CSS3DObject(el);
+    el.style.pointerEvents = 'none';
+    const fenetre = new THREE.Mesh(fenetreGeo, e.fenetre.material);
+    fenetre.renderOrder = 10;
+    const dos = new THREE.Mesh(cadreGeo, bois);
+    // Elle pend à un clou près de son coin gauche : c'est autour de lui qu'elle penche.
+    const pivot = new THREE.Object3D(), clou = new THREE.Object3D();
+    clou.add(objet, fenetre, dos);
+    pivot.add(clou);
+    scene.add(pivot);
+    return { pivot, clou, objet, fenetre, dos };
+  }
+  function poserPlanche(e) {
+    const c = e.chute, { lw, lp, s } = e.planche, x = -lw * 0.42;
+    c.pivot.position.copy(e.charniere);
+    c.pivot.quaternion.copy(e.objet.quaternion).multiply(qBascule.setFromAxisAngle(AXE_X, c.angle));
+    c.clou.position.set(x, 0, 0);
+    c.clou.quaternion.copy(qBiais.setFromAxisAngle(AXE_Z, c.biais ?? 0));
+    for (const m of [c.objet, c.fenetre, c.dos]) m.position.set(-x, -lp / 2, 0);
+    c.objet.scale.setScalar(s);
+    c.fenetre.scale.set(lw, lp, 1);
+    c.dos.position.z = -0.05;
+    c.dos.scale.set(lw + 0.08, lp + 0.04, 0.08);
+  }
+  function retirerPlanche(e) {
+    scene.remove(e.chute.pivot);
+    e.chute.objet.element.remove();
+    e.chute = null;
+  }
+  function animerPlanche(e, dt) {
+    const c = e.chute;
+    c.t = (c.t ?? 0) + dt;
+    if (e.etat === 'chute') {
+      // Les derniers balancements s'éteignent plus vite : la planche se pose au lieu de frémir.
+      const calme = 1 + 3 * lisse(c.t, 0.9, 1.7);
+      c.vitesse += (-CHUTE.raideur * Math.sin(c.angle) - CHUTE.amorti * calme * c.vitesse) * dt;
+      c.angle += c.vitesse * dt;
+      // En passant à la verticale, elle accroche : le clou la fait pencher et osciller.
+      if (!c.secoue && c.angle < 0) { c.secoue = true; c.vBiais += CHUTE.secousse; }
+      c.vBiais += (-CHUTE.raideurBiais * c.biais - CHUTE.amortiBiais * calme * c.vBiais) * dt;
+      c.biais += c.vBiais * dt;
+      // Le vrai panneau ne la remplace qu'une fois immobile et à pleine échelle : le relais ne se voit pas.
+      if (c.secoue && e.transition === 1 && Math.abs(c.angle) < 0.002 && Math.abs(c.vitesse) < 0.02 && Math.abs(c.biais) < 0.0015 && Math.abs(c.vBiais) < 0.015) {
+        retirerPlanche(e);
+        e.etat = 'deplie';
+        placer(e);
+        return;
       }
-      e.centre = centre;
-
-      // Le panneau reste parallèle à l'image, pour qu'il ne paraisse jamais de travers à l'arrêt.
-      const vise = sentier.point(e.d + 8).setY(0).lerp(centre.clone().setY(0), portrait ? 1 : visee);
-      const face = centre.clone().add(e.cam.clone().setY(0).sub(vise).setY(0));
-      e.objet.position.copy(centre);
-      e.objet.scale.setScalar(s);
-      e.objet.lookAt(face);
-      e.fenetre.position.copy(centre);
-      e.fenetre.quaternion.copy(e.objet.quaternion);
-      e.fenetre.scale.set(lw, lh, 1);
-
-      axeX.set(1, 0, 0).applyQuaternion(e.objet.quaternion);
-      vue.set(0, 0, 1).applyQuaternion(e.objet.quaternion);
-      e.vue = vue.clone();
-      e.cadre.position.copy(centre).addScaledVector(vue, -0.05);
-      e.cadre.quaternion.copy(e.objet.quaternion);
-      e.cadre.scale.set(lw + 0.08, lh + 0.08, 0.08);
-
-      const sol = auDessus ? sentier.point(e.d + DEVANT).y : e.sol.y;
-      const hautPoste = centre.y + lh * 0.2;
-      for (const [poste, c] of [[e.posteG, -1], [e.posteD, 1]]) {
-        poste.position.copy(centre).addScaledVector(axeX, c * (lw / 2 - lw * 0.06)).addScaledVector(vue, -0.13);
-        poste.position.y = (sol + hautPoste) / 2;
-        poste.scale.set(1, hautPoste - sol + 0.3, 1);
+    } else {
+      // On la remonte d'un geste qui accélère, puis elle se range derrière le panneau.
+      c.vitesse += CHUTE.remontee * dt;
+      c.angle = Math.min(CHUTE.depart, c.angle + c.vitesse * dt);
+      c.biais = (c.biais ?? 0) * Math.exp(-8 * dt);
+      if (c.angle >= CHUTE.depart && e.transition === 0) {
+        retirerPlanche(e);
+        e.etat = 'replie';
+        e.ajuste = e.ajusteCible = 1;
+        placer(e);
+        return;
       }
     }
+    poserPlanche(e);
   }
 
   // La visite avance par étapes : le coureur fait tout le trajet d'un panneau à l'autre.
@@ -332,6 +541,7 @@ function lancer() {
     if (enVariante) return rebrousser();
     attente = null;
     courante = THREE.MathUtils.clamp(i, 0, n - 1);
+    for (const e of etapes) if (e !== etapes[courante]) deplier(e, false);
     plafond = Math.max(10, Math.abs(etapes[courante].d - distance) / TRAVERSEE);
   };
 
@@ -365,6 +575,7 @@ function lancer() {
   // Tableau de bord : le profil de la course, avec un repère cliquable par étape.
   document.getElementById('tableau').hidden = false;
   const elKm = document.getElementById('km'), elAlti = document.getElementById('alti');
+  const elModes = document.querySelector('#tableau .modes');
   const elPoint = document.getElementById('profil-point'), elFait = document.getElementById('profil-fait');
   const profil = document.getElementById('profil');
   const altMax = sentier.point(L).y;
@@ -480,6 +691,21 @@ function lancer() {
     precedent = maintenant;
     duree += dt;
 
+    for (const e of etapes) {
+      if (!e.repliable) continue;
+      // Ouvert, le panneau passe devant le coureur et les herbes : sa fenêtre est percée en dernier, par-dessus tout.
+      e.fenetre.material.depthTest = e.etat === 'replie';
+      e.fenetre.renderOrder = e.etat === 'replie' ? 0 : 10;
+      if (e.etat === 'replie') continue;
+      const transition = THREE.MathUtils.clamp(e.transition + (e.etat === 'remonte' ? -dt : dt) / CHUTE.echelle, 0, 1);
+      const ajuste = e.ajuste + (e.ajusteCible - e.ajuste) * (1 - Math.exp(-3 * dt));
+      const bouge = transition !== e.transition || Math.abs(ajuste - e.ajuste) > 1e-4;
+      e.transition = transition;
+      e.ajuste = Math.abs(ajuste - e.ajusteCible) < 1e-4 ? e.ajusteCible : ajuste;
+      if (bouge) placer(e);
+      if (e.chute) animerPlanche(e, dt);
+    }
+
     // Une vraie course : il accélère, tient son allure, puis freine en arrivant au panneau.
     // S'il doit repartir dans l'autre sens, il freine trois fois plus fort.
     const ecart = pause || enVariante ? 0 : etapes[courante].d - distance;
@@ -539,7 +765,7 @@ function lancer() {
       sentier.point(distance + 8, regard).setY(regard.y + 1.15);
     }
     // Sur grand écran le coureur reste le sujet : la caméra ne fait qu'entrouvrir le regard vers le panneau.
-    cible.copy(regard).lerp(proche.centre, poids * (surLeCote ? visee : 1));
+    cible.copy(regard).lerp(proche.mire, poids * (surLeCote ? visee : 1));
     const pas = lisse(Math.abs(allure), 0.2, 4);
     pos.y += 0.016 * pas * Math.sin(parcours / 3.1 * Math.PI * 4);
     pos.x += 0.012 * pas * Math.sin(parcours / 3.1 * Math.PI * 2);
@@ -551,6 +777,14 @@ function lancer() {
 
     const ox = sonde ? 0 : proche.ox * poids, oy = sonde ? 0 : proche.oy * poids;
     camera.setViewOffset(largeur, hauteur, ox, oy, largeur, hauteur);
+
+    // Une fois déplié et immobile, on vérifie sur l'image affichée qu'il s'arrête bien au-dessus du tableau de bord ;
+    // s'il dépasse encore, il rapetisse en douceur.
+    if (proche.etat === 'deplie' && proche.etatAffiche === 'deplie' && proche.ajuste === proche.ajusteCible && poids > 0.9 && !sonde) {
+      const r = proche.el.getBoundingClientRect();
+      const voulu = proche.ajusteAffiche * THREE.MathUtils.clamp((limiteBas() - r.top) / r.height, 0.6, 1);
+      if (r.height > 0 && voulu < proche.ajusteCible - 0.003) proche.ajusteCible = voulu;
+    }
 
     const angleRegard = poids > 0.4 ? proche.cote * -0.55 * poids * (1 - retournement) : 0;
     const appui = coureur.animer(dt, duree, parcours, allure, victoire, angleRegard, 4 * retournement * (1 - retournement));
@@ -595,12 +829,13 @@ function lancer() {
       // L'élément HTML reste affiché, sinon ses liens ne pourraient plus prendre le focus au clavier :
       // sans fenêtre percée, le canvas opaque le recouvre déjà.
       e.fenetre.visible = visible;
+      // Seul le panneau devant lequel on s'arrête répond à la souris : un panneau hors champ captait les clics.
+      e.el.style.pointerEvents = visible && poids > 0.5 && e === proche ? 'auto' : 'none';
       if (!visible) continue;
       const f = 1 - Math.exp(-((scene.fog.density * ecart) ** 2));
       // Un léger voile, même de près : la planche prend la lumière de l'air qui l'entoure.
       e.fenetre.material.uniforms.uAlpha.value = Math.max(0.1 + meteo.etat.nuit * 0.26, f);
       e.fenetre.material.uniforms.uBrume.value.copy(scene.fog.color).convertLinearToSRGB();
-      e.el.style.pointerEvents = poids > 0.5 && e === proche ? 'auto' : 'none';
     }
 
     // Si la machine peine, on sacrifie la finesse de l'image plutôt que la fluidité.
@@ -617,6 +852,7 @@ function lancer() {
 
     rendu.render(scene, camera);
     couche.render(scene, camera);
+    for (const e of etapes) Object.assign(e, { ajusteAffiche: e.ajuste, etatAffiche: e.etat });
 
     elKm.textContent = `${(avancement * 21.1).toFixed(1).replace('.', ',')} km`;
     elAlti.textContent = `${Math.round(320 + foyer.y * 14)} m`;
