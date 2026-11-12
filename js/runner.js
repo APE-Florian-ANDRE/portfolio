@@ -89,7 +89,6 @@ export function creerCoureur() {
         doigts: ['1', '2', '3', '4'].flatMap(f => [`Finger${f}`, `Finger${f}1`, `Finger${f}2`]).map(d => os(`${n}_${d}`)),
       })),
     };
-    racine.add(gltf.scene);
 
     mixeur = new THREE.AnimationMixer(gltf.scene);
     const action = nom => {
@@ -105,7 +104,10 @@ export function creerCoureur() {
 
     mixeur.update(0);
     gltf.scene.updateMatrixWorld(true);
+    // Mesuré avant d'être posé sur le sentier : la hauteur de la tête ne doit pas compter l'altitude du sol,
+    // sinon un coureur qui démarre loin du départ (retour du format téléphone) sortirait minuscule.
     gltf.scene.scale.setScalar(TAILLE / os('Head').getWorldPosition(new THREE.Vector3()).y * 0.92);
+    racine.add(gltf.scene);
   });
 
   let cycleCourse = 0, cycleMarche = 0, derniere = null, cap = null;

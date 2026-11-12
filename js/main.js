@@ -51,10 +51,85 @@ for (const livre of document.querySelectorAll('.panneau-livre')) {
     ouverte = vers;
     afficher();
   });
+  // Au doigt, on tourne la page d'un glissé horizontal.
+  let x0 = null, y0 = 0;
+  livre.addEventListener('touchstart', ev => { x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY; }, { passive: true });
+  livre.addEventListener('touchend', ev => {
+    if (x0 === null) return;
+    const dx = ev.changedTouches[0].clientX - x0, dy = ev.changedTouches[0].clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > 1.5 * Math.abs(dy)) (dx < 0 ? suivante : precedente).click();
+  }, { passive: true });
   afficher();
 }
 
-if (essai && !sansMouvement && !params.has('plat')) lancer();
+// Sur téléphone, tout se lit d'un seul défilement : les deux pages du livre l'une sous l'autre,
+// et le détail de chaque projet (captures, fonctionnalités, technique) directement sous sa présentation.
+function toutSurUnePage() {
+  for (const page of document.querySelectorAll('.page')) page.inert = false;
+  for (const bouton of document.querySelectorAll('.explorer')) {
+    const fiche = document.getElementById(bouton.dataset.vers), sorties = bouton.closest('.sorties');
+    const detail = document.createElement('div');
+    detail.className = 'detail';
+    detail.append(...fiche.querySelectorAll(':scope > .galerie, :scope > .colonnes'));
+    sorties.before(detail);
+    bouton.remove();
+    if (!sorties.children.length) sorties.remove();
+  }
+}
+
+// Sur téléphone, pas de sentier : la page défile au doigt, avec un sommaire qui suit la lecture.
+const formatTelephone = matchMedia('(max-width: 760px), (pointer: coarse) and (max-width: 1024px)');
+const telephone = formatTelephone.matches;
+const sentierPossible = essai && !sansMouvement && !params.has('plat');
+// Passer d'un format à l'autre recharge la page dans le bon mode, en revenant à la section qu'on lisait.
+const RETOUR = 'portfolio-retour';
+const retour = (() => {
+  try {
+    const id = sessionStorage.getItem(RETOUR);
+    sessionStorage.removeItem(RETOUR);
+    return id;
+  } catch { return null; }
+})();
+if (retour) history.scrollRestoration = 'manual';
+function basculerVers(versTelephone, sectionEnCours) {
+  formatTelephone.addEventListener('change', () => {
+    if (formatTelephone.matches !== versTelephone) return;
+    try { sessionStorage.setItem(RETOUR, sectionEnCours()); } catch {}
+    location.reload();
+  });
+}
+if (sentierPossible && !telephone) lancer();
+else lirePage();
+
+function lirePage() {
+  // Sans sentier, la fiche se referme simplement.
+  for (const bouton of document.querySelectorAll('.fiche form button')) bouton.textContent = 'Fermer';
+  if (telephone) toutSurUnePage();
+  const sections = [...document.querySelectorAll('#sentier > .panneau')];
+  const titre = section => section.querySelector('h1, h2').id;
+  if (retour) document.getElementById(retour)?.closest('.panneau')?.scrollIntoView({ behavior: 'instant' });
+  if (telephone && sentierPossible) basculerVers(false, () => titre(sections.findLast(x => x.getBoundingClientRect().top < innerHeight * 0.35) ?? sections[0]));
+  const liens = [...document.querySelectorAll('.sommaire a')];
+  const cibles = liens.map(a => document.querySelector(a.hash));
+  const barre = document.querySelector('.sommaire ul');
+  let attente = false, actif = -2;
+  const suivre = () => {
+    attente = false;
+    // La section en cours est la dernière dont le haut est passé au premier tiers de l'écran.
+    let k = -1;
+    cibles.forEach((c, i) => { if (c.getBoundingClientRect().top < innerHeight * 0.35) k = i; });
+    if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) k = cibles.length - 1;
+    if (k === actif) return;
+    actif = k;
+    liens.forEach((a, i) => i === k ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current'));
+    // La puce active reste visible dans la barre, sans faire bouger la page.
+    const lien = liens[k];
+    if (lien) barre.scrollTo({ left: lien.offsetLeft - (barre.clientWidth - lien.offsetWidth) / 2, behavior: 'smooth' });
+  };
+  addEventListener('scroll', () => { if (!attente) { attente = true; requestAnimationFrame(suivre); } }, { passive: true });
+  suivre();
+}
 
 function lancer() {
   document.documentElement.classList.add('monde');
@@ -536,6 +611,15 @@ function lancer() {
   const n = etapes.length;
   let courante = 0, plafond = 0, pause = false, sonde = null, chronoArrivee = 0;
   const FIN_ARRIVEE = 2.075;
+  // Revenu du format téléphone : on repart du panneau qu'on lisait.
+  if (retour) {
+    const i = etapes.findIndex(e => e.el.querySelector(`#${CSS.escape(retour)}`));
+    if (i > 0) {
+      courante = i;
+      distance = etapes[i].d;
+    }
+  }
+  basculerVers(true, () => etapes[courante].el.querySelector('h1, h2').id);
   // Sur une variante, tout geste de navigation ramène d'abord au sentier.
   const allerA = i => {
     if (enVariante) return rebrousser();

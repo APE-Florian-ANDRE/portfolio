@@ -15,17 +15,28 @@
 </head>
 <body>
 <a class="evitement" href="?plat">Voir le portfolio sans animation</a>
+<!-- Sur téléphone, le sentier laisse la place à une page qui défile : ce sommaire reste en haut de l'écran. -->
+<nav class="sommaire" aria-label="Sections du portfolio">
+  <ul>
+    <li><a href="#a-propos">Profil</a></li>
+    <li><a href="#parcours">Parcours</a></li>
+    <li><a href="#projets">Projets</a></li>
+    <li><a href="#competences">Compétences</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
 
 <div id="monde">
   <main id="sentier">
     <!-- Tout le contenu du site est ici. Chaque section devient un panneau du sentier, dans cet ordre.
          Sur écran vertical, le panneau enjambe le chemin ; sinon il se dresse sur le bas-côté. -->
 
-    <section class="panneau panneau-depart" aria-labelledby="t-depart">
+    <section class="panneau panneau-depart" id="haut" aria-labelledby="t-depart">
       <p class="balise" aria-hidden="true"><i></i><i></i></p>
       <h1 id="t-depart">Florian André</h1>
       <p class="chapo">Je transforme ce qui ralentit les équipes en outils qui leur font gagner du temps.</p>
       <p class="consigne">Fais défiler pour rejoindre le panneau suivant.</p>
+      <p class="sorties couverture-actions"><a class="vers-projets" href="#projets">Voir les projets</a><a href="#contact">Me contacter</a></p>
     </section>
 
     <section class="panneau" aria-labelledby="t-pourquoi">
@@ -38,7 +49,7 @@
       </ul>
     </section>
 
-    <section class="panneau panneau-hero" aria-labelledby="t-profil">
+    <section class="panneau panneau-hero" id="a-propos" aria-labelledby="t-profil">
       <img class="buste" src="assets/photo-buste.jpg" alt="Portrait de Florian André" width="480" height="640">
       <div class="hero-texte">
         <p class="balise" aria-hidden="true"><i></i><i></i></p>
@@ -56,7 +67,7 @@
       </div>
     </section>
 
-    <section class="panneau" aria-labelledby="t-formation">
+    <section class="panneau" id="parcours" aria-labelledby="t-formation">
       <p class="balise" aria-hidden="true"><i></i><i></i></p>
       <h2 id="t-formation">Formation</h2>
       <dl class="sac">
@@ -104,18 +115,19 @@
         <button type="button" class="tourner" data-sens="1" aria-label="Page suivante">Tourner la page ›</button>
       </p>
     </section>
-    <section class="panneau" aria-labelledby="t-pacebook">
+    <section class="panneau panneau-projet" id="projets" aria-labelledby="t-pacerun">
+      <img class="vignette" src="assets/projets/pacerun-accueil.jpg" alt="" width="1200" height="750" loading="lazy">
       <p class="balise" aria-hidden="true"><i></i><i></i></p>
-      <h2 id="t-pacebook">Pacebook</h2>
-      <p>Un carnet d'entraînement pour la course, le trail, le VTT et la force&nbsp;: plan, allures, calories, ressenti après séance et import depuis Apple Santé ou Polar Flow.</p>
-      <p>Il marche sans connexion. Un compte retrouve ensuite les données sur tous les appareils.</p>
+      <h2 id="t-pacerun">Pace'Run</h2>
+      <p>Un plan d'entraînement pour la course, le trail, le VTT et la force&nbsp;: allures, calories, ressenti après séance et import depuis Apple Santé ou Polar Flow.</p>
+      <p>Sur le web, il marche sans connexion et un compte retrouve les données partout. Une app iPhone native s'y ajoute, branchée sur Apple Santé et l'Apple Watch.</p>
       <ul class="etiquettes">
-        <li>JavaScript sans build</li><li>Supabase</li><li>Vercel</li><li>n8n</li><li>Playwright</li>
+        <li>JavaScript sans build</li><li>SwiftUI</li><li>Supabase</li><li>Vercel</li><li>n8n</li><li>Playwright</li>
       </ul>
-      <p class="sorties"><button type="button" class="explorer" data-vers="fiche-pacebook">Explorer le projet</button><a href="https://github.com/APE-Florian-ANDRE/CarnetCourse">Voir le code</a></p>
+      <p class="sorties"><button type="button" class="explorer" data-vers="fiche-pacerun">Explorer le projet</button><a href="https://pacerun-app.vercel.app/">Voir le site</a><a href="https://github.com/APE-Florian-ANDRE/PaceRun">Voir le code</a></p>
     </section>
 
-    <section class="panneau" aria-labelledby="t-pulse">
+    <section class="panneau panneau-projet" aria-labelledby="t-pulse">
       <p class="balise" aria-hidden="true"><i></i><i></i></p>
       <h2 id="t-pulse">BPM Pulse</h2>
       <p>Une application iPhone et Apple Watch qui cale Spotify sur le rythme de l'effort&nbsp;: quand le BPM s'écarte de plus de 8&nbsp;% du tempo du morceau, la file d'attente se renouvelle.</p>
@@ -126,7 +138,8 @@
       <p class="sorties"><button type="button" class="explorer" data-vers="fiche-pulse">Explorer le projet</button></p>
     </section>
 
-    <section class="panneau" aria-labelledby="t-ravito">
+    <section class="panneau panneau-projet" aria-labelledby="t-ravito">
+      <img class="vignette" src="assets/projets/ravito-progres.jpg" alt="" width="416" height="900" loading="lazy">
       <p class="balise" aria-hidden="true"><i></i><i></i></p>
       <h2 id="t-ravito">Ravito</h2>
       <p>Un suivi nutrition sur mesure&nbsp;: calories, protéines, fibres, eau, poids, recettes maison et objectifs personnalisables.</p>
@@ -137,7 +150,8 @@
       <p class="sorties"><button type="button" class="explorer" data-vers="fiche-ravito">Explorer le projet</button></p>
     </section>
 
-    <section class="panneau" aria-labelledby="t-dedale">
+    <section class="panneau panneau-projet" aria-labelledby="t-dedale">
+      <img class="vignette" src="assets/projets/dedale-eau.jpg" alt="" width="1000" height="666" loading="lazy">
       <p class="balise" aria-hidden="true"><i></i><i></i></p>
       <h2 id="t-dedale">Dédale</h2>
       <p>Un mini-jeu 2D dessiné sur canvas&nbsp;: dix cartes à traverser au clavier, entre eau, buissons et lave.</p>
@@ -148,7 +162,7 @@
       <p class="sorties"><button type="button" class="explorer" data-vers="fiche-dedale">Explorer le projet</button></p>
     </section>
 
-    <section class="panneau panneau-compact" aria-labelledby="t-savoirs">
+    <section class="panneau panneau-compact" id="competences" aria-labelledby="t-savoirs">
       <p class="balise" aria-hidden="true"><i></i><i></i></p>
       <h2 id="t-savoirs">Dans le sac</h2>
       <dl class="sac">
@@ -161,7 +175,7 @@
       </dl>
     </section>
 
-    <section class="panneau panneau-arrivee" aria-labelledby="t-arrivee">
+    <section class="panneau panneau-arrivee" id="contact" aria-labelledby="t-arrivee">
       <p class="balise" aria-hidden="true"><i></i><i></i></p>
       <h2 id="t-arrivee">Arrivée</h2>
       <p class="chapo">Un projet à lancer&nbsp;? Écris-moi, je réponds vite.</p>
@@ -175,14 +189,14 @@
 </div>
 
 <!-- Les fiches projet : au bout de chaque variante balisée en jaune, ou directement depuis le panneau sans le sentier. -->
-<dialog class="fiche" id="fiche-pacebook" aria-labelledby="f-pacebook">
+<dialog class="fiche" id="fiche-pacerun" aria-labelledby="f-pacerun">
   <p class="balise-variante" aria-hidden="true"></p>
-  <h2 id="f-pacebook">Pacebook</h2>
-  <p class="chapo">Un carnet d'entraînement complet, pensé pour fonctionner sans connexion.</p>
+  <h2 id="f-pacerun">Pace'Run</h2>
+  <p class="chapo">Un plan d'entraînement complet, sur le web et sur iPhone, pensé pour fonctionner sans connexion.</p>
   <div class="galerie">
-    <figure><img src="assets/projets/pacebook-accueil.jpg" alt="Page d'accueil de Pacebook : « Ton plan de course, calé sur ta vie », avec une séance de fractionné du jour" width="1200" height="750" loading="lazy"><figcaption>L'accueil&nbsp;: un plan prêt en deux minutes, même sans compte.</figcaption></figure>
-    <figure><img src="assets/projets/pacebook-semaine.jpg" alt="Vue Semaine de Pacebook : prochaine séance, footing facile et renfo, et les jours de la semaine avec allures et calories" width="1200" height="750" loading="lazy"><figcaption>La semaine&nbsp;: séances, allures et calories du jour.</figcaption></figure>
-    <figure class="telephone"><img src="assets/projets/pacebook-mobile.jpg" alt="Pacebook sur téléphone" width="416" height="900" loading="lazy"><figcaption>Sur téléphone.</figcaption></figure>
+    <figure><img src="assets/projets/pacerun-accueil.jpg" alt="Page d'accueil de Pace'Run : « Ton plan de course, calé sur ta vie », avec une séance de fractionné du jour" width="1200" height="750" loading="lazy"><figcaption>L'accueil&nbsp;: un plan prêt en deux minutes, même sans compte.</figcaption></figure>
+    <figure><img src="assets/projets/pacerun-semaine.jpg" alt="Vue Semaine de Pace'Run : prochaine séance, footing facile et renfo, et les jours de la semaine avec calories et allures" width="1200" height="750" loading="lazy"><figcaption>La semaine&nbsp;: séances, allures et calories du jour.</figcaption></figure>
+    <figure class="telephone"><img src="assets/projets/pacerun-mobile.jpg" alt="Page d'accueil de Pace'Run sur téléphone" width="416" height="900" loading="lazy"><figcaption>Sur téléphone.</figcaption></figure>
   </div>
   <div class="colonnes">
     <section>
@@ -192,6 +206,7 @@
         <li>Allures et calories de chaque jour, avec un déficit prudent.</li>
         <li>Ressenti après séance, import Apple Santé et Polar Flow, export vers le calendrier.</li>
         <li>Un coach IA optionnel, avec consentement séparé et garde-fous.</li>
+        <li>Sur iPhone&nbsp;: une «&nbsp;Forme du jour&nbsp;» tirée de la FC au repos, de la VFC et du sommeil, l'ECG de l'Apple Watch, et les séances de la montre cochées toutes seules.</li>
       </ul>
     </section>
     <section>
@@ -200,11 +215,12 @@
         <li>Site statique sans build ni script tiers&nbsp;: tout tourne dans le navigateur.</li>
         <li>Comptes Google, Microsoft ou GitHub, données dans Supabase protégées par des règles RLS.</li>
         <li>Coach branché sur un webhook n8n ou une fonction Vercel.</li>
-        <li>CSP stricte, en-têtes de sécurité, tests automatisés sans réseau.</li>
+        <li>L'app iPhone en SwiftUI exécute le même moteur de plan que le site, via JavaScriptCore&nbsp;: un seul code, le même plan.</li>
+        <li>CSP stricte et audit de sécurité, tests automatisés en CI, environ 88&nbsp;% du code couvert.</li>
       </ul>
     </section>
   </div>
-  <form method="dialog" class="sorties"><button>Revenir au sentier</button><a href="https://github.com/APE-Florian-ANDRE/CarnetCourse">Voir le code</a></form>
+  <form method="dialog" class="sorties"><button>Revenir au sentier</button><a href="https://pacerun-app.vercel.app/">Voir le site</a><a href="https://github.com/APE-Florian-ANDRE/PaceRun">Voir le code</a></form>
 </dialog>
 
 <dialog class="fiche" id="fiche-pulse" aria-labelledby="f-pulse">
@@ -248,7 +264,7 @@
       <ul>
         <li>Calories, protéines, fibres, glucides, lipides, eau et poids.</li>
         <li>Un journal repas par repas et dix-sept recettes maison.</li>
-        <li>Des objectifs réglables pour chaque compte.</li>
+        <li>Des objectifs réglables pour chaque compte, derrière une page d'accueil publique.</li>
       </ul>
     </section>
     <section>
